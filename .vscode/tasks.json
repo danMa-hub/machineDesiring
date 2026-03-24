@@ -1,0 +1,56 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Build MachineDesiringEditor (Development)",
+            "type": "shell",
+            "command": "C:/Program Files/Epic Games/UE_5.7/Engine/Binaries/DotNET/UnrealBuildTool/UnrealBuildTool.exe",
+            "args": [
+                "MachineDesiringEditor",
+                "Win64",
+                "Development",
+                "-Project=D:/THEGUTS/theGutsUnreal/MachineDesiring/MachineDesiring/MachineDesiring.uproject",
+                "-WaitMutex"
+            ],
+            "options": {
+                "shell": {
+                    "executable": "cmd.exe",
+                    "args": ["/d", "/c"]
+                }
+            },
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            },
+            "problemMatcher": "$msCompile"
+        },
+        {
+            "label": "Build MachineDesiring Game (Development)",
+            "type": "shell",
+            "command": "C:/Program Files/Epic Games/UE_5.7/Engine/Binaries/DotNET/UnrealBuildTool/UnrealBuildTool.exe",
+            "args": [
+                "MachineDesiring",
+                "Win64",
+                "Development",
+                "-Project=D:/THEGUTS/theGutsUnreal/MachineDesiring/MachineDesiring/MachineDesiring.uproject",
+                "-WaitMutex"
+            ],
+            "options": {
+                "shell": {
+                    "executable": "cmd.exe",
+                    "args": ["/d", "/c"]
+                }
+            },
+            "group": "build",
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            },
+            "problemMatcher": "$msCompile"
+        }
+    ]
+}
