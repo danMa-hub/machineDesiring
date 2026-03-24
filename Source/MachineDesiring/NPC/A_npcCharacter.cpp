@@ -113,37 +113,50 @@ void A_npcCharacter::InitWithId(int32 Id)
 
 // ================================================================
 // InitThresholds
-// Soglie di partenza uguali per tutti (Start = Curr).
-// myVisMinThreshold: lieve varianza per-NPC — alcuni NPC sono
-//   strutturalmente più selettivi e non abbassano oltre il loro limite.
-// mySexMinThreshold: 0.40 fisso — hard limit algoritmico (§2.1).
+// Genera soglie per-NPC con varianza gaussiana deterministica (seed = myId).
+//
+// Invariante: myXxxMinThreshold < STANDARD(0.35) < myXxxStartThreshold
+//   Start = 0.35 + gauss(0.08, 0.03) clamp [0.03, 0.25]  → range [0.38, 0.60]
+//   Min   = 0.35 - gauss(0.12, 0.04) clamp [0.05, 0.25]  → range [0.10, 0.30]
+//
+// Seed offset: +500 per VisMin, +1000 per SexStart, +1500 per SexMin
+// evita correlazione tra le quattro estrazioni per-NPC.
 // ================================================================
+
+static float InitThresholds_Gauss(FRandomStream& R, float Mean, float SD)
+{
+	const float U1 = FMath::Max(1e-6f, R.FRand());
+	const float U2 = R.FRand();
+	return Mean + SD * FMath::Sqrt(-2.f * FMath::Loge(U1)) * FMath::Cos(2.f * PI * U2);
+}
 
 void A_npcCharacter::InitThresholds()
 {
-	// Vis start + curr — stessa soglia iniziale
-	myVisStartThreshold = 0.35f;
-	myVisCurrThreshold  = myVisStartThreshold;
-
-	// Vis min — lieve varianza per-NPC, deterministica con seed = myId.
-	// FRandomStream locale: ogni NPC produce sempre lo stesso valore
-	// indipendentemente dall'ordine di spawn.
-	// gauss(0.10, 0.02) clamp [0.05, 0.20]
+	// ── Vis ──────────────────────────────────────────────────────
 	{
-		FRandomStream LocalRNG(myId);
-		const float U1 = FMath::Max(1e-6f, LocalRNG.FRand());
-		const float U2 = LocalRNG.FRand();
-		const float Gauss = 0.10f + 0.02f
-		    * FMath::Sqrt(-2.f * FMath::Loge(U1)) * FMath::Cos(2.f * PI * U2);
-		myVisMinThreshold = FMath::Clamp(Gauss, 0.05f, 0.20f);
+		FRandomStream R(myId);
+		const float Offset = FMath::Clamp(InitThresholds_Gauss(R, 0.08f, 0.03f), 0.03f, 0.25f);
+		myVisStartThreshold = U_populationSubsystem::VIS_STANDARD_THRESHOLD + Offset;
+		myVisCurrThreshold  = myVisStartThreshold;
+	}
+	{
+		FRandomStream R(myId + 500);
+		const float Drop = FMath::Clamp(InitThresholds_Gauss(R, 0.12f, 0.04f), 0.05f, 0.25f);
+		myVisMinThreshold = U_populationSubsystem::VIS_STANDARD_THRESHOLD - Drop;
 	}
 
-	// Sex start + curr
-	mySexStartThreshold = 0.50f;
-	mySexCurrThreshold  = mySexStartThreshold;
-
-	// Sex min — fisso, hard limit algoritmico (Algoritmo_Cruising §2.1)
-	mySexMinThreshold = 0.40f;
+	// ── Sex ──────────────────────────────────────────────────────
+	{
+		FRandomStream R(myId + 1000);
+		const float Offset = FMath::Clamp(InitThresholds_Gauss(R, 0.08f, 0.03f), 0.03f, 0.25f);
+		mySexStartThreshold = U_populationSubsystem::SEX_STANDARD_THRESHOLD + Offset;
+		mySexCurrThreshold  = mySexStartThreshold;
+	}
+	{
+		FRandomStream R(myId + 1500);
+		const float Drop = FMath::Clamp(InitThresholds_Gauss(R, 0.12f, 0.04f), 0.05f, 0.25f);
+		mySexMinThreshold = U_populationSubsystem::SEX_STANDARD_THRESHOLD - Drop;
+	}
 }
 
 // ================================================================

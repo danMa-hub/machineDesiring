@@ -212,6 +212,7 @@ void U_populationSubsystem::GeneratePopulation()
 	// Pre-calcola tutte le attrazioni — runtime usa solo getter O(1)
 	BuildAttractionMatrices();
 	BuildMeshScaleCache();
+	BuildPopulationMetrics();
 
 	if (InspectionTable)
 	{
@@ -869,6 +870,11 @@ void U_populationSubsystem::BuildAttractionMatrices()
 	VisAttractionMatrix.SetNumZeroed(N * N);
 	SexAttractionMatrix.SetNumZeroed(N * N);
 
+	// §1.2 — AppAttractionMatrix: CalcAppAttraction() single-pass, tutti gli 11 variabili
+	// con pesi normalizzati da letteratura (BottomTop dominante a 0.203).
+	// Sostituisce la formula arbitraria 0.60×vis + 0.40×sex.
+	AppAttractionMatrix.SetNumZeroed(N * N);
+
 	for (int32 i = 0; i < N; i++)
 	{
 		for (int32 j = 0; j < N; j++)
@@ -876,10 +882,11 @@ void U_populationSubsystem::BuildAttractionMatrices()
 			if (i == j) continue;
 			VisAttractionMatrix[i * N + j] = CalcVisualAttraction(i, j);
 			SexAttractionMatrix[i * N + j] = CalcSexualAttraction(i, j);
+			AppAttractionMatrix[i * N + j] = CalcAppAttraction(i, j);
 		}
 	}
 
-	UE_LOG(LogTemp, Log, TEXT("BuildAttractionMatrices: %d×%d = %d valori"), N, N, N * N);
+	UE_LOG(LogTemp, Log, TEXT("BuildAttractionMatrices: %d×%d = %d valori (vis+sex+app)"), N, N, N * N);
 }
 
 // ================================================================
@@ -893,9 +900,10 @@ void U_populationSubsystem::BuildMeshScaleCache()
 	const int32 N = Profiles.Num();
 	MeshScaleZCache.SetNumZeroed(N);
 
-	// Calcola myPop_visAttraction per ogni NPC
-	TArray<float> PopVis;
-	PopVis.SetNumZeroed(N);
+	// §1.3 — PopVisAttractionCache: myPop_visAttraction per ogni NPC
+	// Media delle attrazioni visive ricevute da tutta la popolazione (colonna j della matrice).
+	// Nota: già calcolato qui come PopVis[], ora esposto come PopVisAttractionCache.
+	PopVisAttractionCache.SetNumZeroed(N);
 	for (int32 j = 0; j < N; j++)
 	{
 		float Total = 0.f;
@@ -903,22 +911,70 @@ void U_populationSubsystem::BuildMeshScaleCache()
 		{
 			if (i != j) Total += VisAttractionMatrix[i * N + j];
 		}
-		PopVis[j] = Total / FMath::Max(1, N - 1);
+		PopVisAttractionCache[j] = Total / FMath::Max(1, N - 1);
 	}
 
-	// Min/max per normalizzazione
-	float MinVis = PopVis[0], MaxVis = PopVis[0];
-	for (float V : PopVis)
+	// §1.3 — PopSexAttractionCache: media attrazioni sessuali ricevute
+	PopSexAttractionCache.SetNumZeroed(N);
+	for (int32 j = 0; j < N; j++)
+	{
+		float Total = 0.f;
+		for (int32 i = 0; i < N; i++)
+		{
+			if (i != j) Total += SexAttractionMatrix[i * N + j];
+		}
+		PopSexAttractionCache[j] = Total / FMath::Max(1, N - 1);
+	}
+
+	// §1.3 — PopAppAttractionCache: media attrazioni app-mode ricevute
+	PopAppAttractionCache.SetNumZeroed(N);
+	for (int32 j = 0; j < N; j++)
+	{
+		float Total = 0.f;
+		for (int32 i = 0; i < N; i++)
+		{
+			if (i != j) Total += AppAttractionMatrix[i * N + j];
+		}
+		PopAppAttractionCache[j] = Total / FMath::Max(1, N - 1);
+	}
+
+	// §1.3 — OutVisAttractionCount / InVisAttractionCount
+	// Usa VIS_STANDARD_THRESHOLD (0.35 fisso), NON myVisCurrThreshold adattiva.
+	OutVisAttractionCount.SetNumZeroed(N);
+	InVisAttractionCount.SetNumZeroed(N);
+	for (int32 i = 0; i < N; i++)
+	{
+		for (int32 j = 0; j < N; j++)
+		{
+			if (i == j) continue;
+			if (VisAttractionMatrix[i * N + j] >= VIS_STANDARD_THRESHOLD)
+			{
+				OutVisAttractionCount[i]++;
+				InVisAttractionCount[j]++;
+			}
+		}
+	}
+
+	// §1.3 — VisAttractionBalance: myIn / myOut per NPC
+	// >1 = posizione favorevole, <1 = frustrazione strutturale
+	VisAttractionBalance.SetNumZeroed(N);
+	for (int32 j = 0; j < N; j++)
+	{
+		const float Out = FMath::Max(1.f, static_cast<float>(OutVisAttractionCount[j]));
+		VisAttractionBalance[j] = static_cast<float>(InVisAttractionCount[j]) / Out;
+	}
+
+	// MeshScaleZ: [0.5, 4.0] normalizzata su PopVisAttractionCache
+	float MinVis = PopVisAttractionCache[0], MaxVis = PopVisAttractionCache[0];
+	for (float V : PopVisAttractionCache)
 	{
 		MinVis = FMath::Min(MinVis, V);
 		MaxVis = FMath::Max(MaxVis, V);
 	}
 	const float Range = FMath::Max(MaxVis - MinVis, 1e-4f);
-
-	// Scala Z: [0.5, 4.0] normalizzata su range popolazione
 	for (int32 j = 0; j < N; j++)
 	{
-		const float Normalized = (PopVis[j] - MinVis) / Range;
+		const float Normalized = (PopVisAttractionCache[j] - MinVis) / Range;
 		MeshScaleZCache[j] = FMath::Lerp(0.5f, 4.0f, Normalized);
 	}
 }
@@ -956,4 +1012,196 @@ float U_populationSubsystem::GetMeshScaleZ(int32 NpcId) const
 {
 	if (!MeshScaleZCache.IsValidIndex(NpcId)) return 1.f;
 	return MeshScaleZCache[NpcId];
+}
+
+// ================================================================
+// §1.2/1.3 — Getters cached vectors
+// ================================================================
+
+float U_populationSubsystem::GetAppScore(int32 ObsId, int32 TgtId) const
+{
+	if (ObsId == TgtId || !Profiles.IsValidIndex(ObsId) || !Profiles.IsValidIndex(TgtId))
+		return 0.f;
+	return AppAttractionMatrix[ObsId * Profiles.Num() + TgtId];
+}
+
+float U_populationSubsystem::GetPopVisAttraction(int32 NpcId) const
+{
+	if (!PopVisAttractionCache.IsValidIndex(NpcId)) return 0.f;
+	return PopVisAttractionCache[NpcId];
+}
+
+float U_populationSubsystem::GetPopSexAttraction(int32 NpcId) const
+{
+	if (!PopSexAttractionCache.IsValidIndex(NpcId)) return 0.f;
+	return PopSexAttractionCache[NpcId];
+}
+
+float U_populationSubsystem::GetPopAppAttraction(int32 NpcId) const
+{
+	if (!PopAppAttractionCache.IsValidIndex(NpcId)) return 0.f;
+	return PopAppAttractionCache[NpcId];
+}
+
+int32 U_populationSubsystem::GetOutVisAttractionCount(int32 NpcId) const
+{
+	if (!OutVisAttractionCount.IsValidIndex(NpcId)) return 0;
+	return OutVisAttractionCount[NpcId];
+}
+
+int32 U_populationSubsystem::GetInVisAttractionCount(int32 NpcId) const
+{
+	if (!InVisAttractionCount.IsValidIndex(NpcId)) return 0;
+	return InVisAttractionCount[NpcId];
+}
+
+float U_populationSubsystem::GetVisAttractionBalance(int32 NpcId) const
+{
+	if (!VisAttractionBalance.IsValidIndex(NpcId)) return 0.f;
+	return VisAttractionBalance[NpcId];
+}
+
+// ================================================================
+// §1.4 — BuildPopulationMetrics
+// Tutte le metriche scalari di popolazione. Chiamata una volta dopo
+// BuildMeshScaleCache(). Opera su dati già calcolati — nessun ricalcolo
+// delle attrazioni. O(N) per metriche per-variabile, O(N²) per pairs.
+// ================================================================
+
+void U_populationSubsystem::BuildPopulationMetrics()
+{
+	const int32 N = Profiles.Num();
+	if (N == 0) return;
+
+	const float Nf = static_cast<float>(N);
+
+	// ── Gini coefficient su PopVisAttractionCache ─────────────────
+	// Gini = (2 * sum(rank_i * val_i) / (N * sum(val_i))) - (N+1)/N
+	{
+		TArray<float> Sorted = PopVisAttractionCache;
+		Sorted.Sort();
+		float SumVal = 0.f, SumRankVal = 0.f;
+		for (int32 i = 0; i < N; i++)
+		{
+			SumVal     += Sorted[i];
+			SumRankVal += static_cast<float>(i + 1) * Sorted[i];
+		}
+		if (SumVal > 1e-6f)
+			PopVisAttractionPolarization = (2.f * SumRankVal) / (Nf * SumVal) - (Nf + 1.f) / Nf;
+		else
+			PopVisAttractionPolarization = 0.f;
+	}
+
+	// ── Demand/supply ratio e desire gap per variabile ────────────
+	// sum(myDesired_X) / sum(MyX) — scansione O(N) sui profili
+	{
+		double SumMyMuscle=0, SumDesiredMuscle=0;
+		double SumMySlim=0,   SumDesiredSlim=0;
+		double SumMyBeauty=0, SumDesiredBeauty=0;
+		double SumMyMasc=0,   SumDesiredMasc=0;
+		double SumMyHair=0,   SumDesiredHair=0;
+		double SumMyAge=0,    SumDesiredAge=0;
+		double SumMyBT=0,     SumDesiredBT=0;
+
+		for (const F_npcProfile& P : Profiles)
+		{
+			SumMyMuscle      += P.MyMuscle;       SumDesiredMuscle      += P.myDesired_Muscle;
+			SumMySlim        += P.MySlim;         SumDesiredSlim        += P.myDesired_Slim;
+			SumMyBeauty      += P.MyBeauty;       SumDesiredBeauty      += P.myDesired_Beauty;
+			SumMyMasc        += P.MyMasculinity;  SumDesiredMasc        += P.myDesired_Masculinity;
+			SumMyHair        += P.MyHair;         SumDesiredHair        += P.myDesired_Hair;
+			SumMyAge         += P.myAgeNorm;      SumDesiredAge         += P.myDesired_Age;
+			SumMyBT          += P.MyBottomTop;    SumDesiredBT          += P.myDesired_BottomTop;
+		}
+
+		auto SafeRatio = [](double Num, double Den) -> float {
+			return Den > 1e-6 ? static_cast<float>(Num / Den) : 1.f;
+		};
+
+		PopDemandSupplyRatio_Muscle      = SafeRatio(SumDesiredMuscle, SumMyMuscle);
+		PopDemandSupplyRatio_Slim        = SafeRatio(SumDesiredSlim,   SumMySlim);
+		PopDemandSupplyRatio_Beauty      = SafeRatio(SumDesiredBeauty, SumMyBeauty);
+		PopDemandSupplyRatio_Masculinity = SafeRatio(SumDesiredMasc,   SumMyMasc);
+		PopDemandSupplyRatio_Hair        = SafeRatio(SumDesiredHair,   SumMyHair);
+		PopDemandSupplyRatio_Age         = SafeRatio(SumDesiredAge,    SumMyAge);
+		PopDemandSupplyRatio_BottomTop   = SafeRatio(SumDesiredBT,     SumMyBT);
+
+		PopDesireGap_Muscle      = static_cast<float>((SumDesiredMuscle - SumMyMuscle)   / N);
+		PopDesireGap_Slim        = static_cast<float>((SumDesiredSlim   - SumMySlim)     / N);
+		PopDesireGap_Beauty      = static_cast<float>((SumDesiredBeauty - SumMyBeauty)   / N);
+		PopDesireGap_Masculinity = static_cast<float>((SumDesiredMasc   - SumMyMasc)     / N);
+		PopDesireGap_Hair        = static_cast<float>((SumDesiredHair   - SumMyHair)     / N);
+		PopDesireGap_Age         = static_cast<float>((SumDesiredAge    - SumMyAge)      / N);
+		PopDesireGap_BottomTop   = static_cast<float>((SumDesiredBT     - SumMyBT)       / N);
+	}
+
+	// ── Pairs compatibility (O(N²) su matrici pre-calcolate) ─────
+	// Kink incompatibility threshold — default 0.80, slider-configurabile in futuro
+	constexpr float KINK_INCOMPAT_THRESHOLD = 0.80f;
+
+	int64 TotalPairs       = 0;
+	int64 VisMatchPairs    = 0;
+	int64 VisSexMatchPairs = 0;
+	int64 AppMatchPairs    = 0;
+	int64 BtIncompatPairs  = 0;  // vis-matched che falliscono per BT
+	int64 KinkIncompatPairs= 0;  // vis-matched che falliscono per kink
+
+	for (int32 i = 0; i < N - 1; i++)
+	{
+		const F_npcProfile& A = Profiles[i];
+		for (int32 j = i + 1; j < N; j++)
+		{
+			const F_npcProfile& B = Profiles[j];
+			TotalPairs++;
+
+			const float VisAB = VisAttractionMatrix[i * N + j];
+			const float VisBA = VisAttractionMatrix[j * N + i];
+			const bool  bVisMutual = (VisAB >= VIS_STANDARD_THRESHOLD && VisBA >= VIS_STANDARD_THRESHOLD);
+
+			if (bVisMutual)
+			{
+				VisMatchPairs++;
+
+				const float SexAB = SexAttractionMatrix[i * N + j];
+				const float SexBA = SexAttractionMatrix[j * N + i];
+				if (SexAB >= SEX_STANDARD_THRESHOLD && SexBA >= SEX_STANDARD_THRESHOLD)
+					VisSexMatchPairs++;
+
+				// BT incompatibility: dealbreaker attivo in almeno una direzione
+				// Stessa soglia usata in CalcSexualAttraction (Li et al. 2002)
+				const float BtDistAB = FMath::Abs(A.myDesired_BottomTop - B.MyBottomTop);
+				const float BtDistBA = FMath::Abs(B.myDesired_BottomTop - A.MyBottomTop);
+				if (BtDistAB > 0.60f || BtDistBA > 0.60f)
+					BtIncompatPairs++;
+
+				// Kink incompatibility: entrambe le direzioni superano la soglia
+				const float KlDistAB = FMath::Abs(A.myDesired_KinkLevel - B.MyKinkLevel);
+				const float KlDistBA = FMath::Abs(B.myDesired_KinkLevel - A.MyKinkLevel);
+				if (KlDistAB > KINK_INCOMPAT_THRESHOLD && KlDistBA > KINK_INCOMPAT_THRESHOLD)
+					KinkIncompatPairs++;
+			}
+
+			// App-mode match (indipendente da vis/sex)
+			const float AppAB = AppAttractionMatrix[i * N + j];
+			const float AppBA = AppAttractionMatrix[j * N + i];
+			if (AppAB >= VIS_STANDARD_THRESHOLD && AppBA >= VIS_STANDARD_THRESHOLD)
+				AppMatchPairs++;
+		}
+	}
+
+	const float TotalF    = FMath::Max(1.f, static_cast<float>(TotalPairs));
+	const float VisMatchF = FMath::Max(1.f, static_cast<float>(VisMatchPairs));
+
+	PairsVisCompatibilityRate          = static_cast<float>(VisMatchPairs)    / TotalF;
+	PairsVisSexCompatibilityRate_cruise       = static_cast<float>(VisSexMatchPairs) / TotalF;
+	PairsFullCompatibilityRateApp      = static_cast<float>(AppMatchPairs)    / TotalF;
+	PairsVisMatchedBottomTopIncompatibilityShare_cruise = static_cast<float>(BtIncompatPairs)  / VisMatchF;
+	PairsKinkIncompatibilityShare      = static_cast<float>(KinkIncompatPairs)/ VisMatchF;
+
+	UE_LOG(LogTemp, Log,
+		TEXT("BuildPopulationMetrics: Gini=%.3f VisMatch=%.1f%% VisSexMatch=%.1f%% BtIncompat=%.1f%%"),
+		PopVisAttractionPolarization,
+		PairsVisCompatibilityRate * 100.f,
+		PairsVisSexCompatibilityRate_cruise * 100.f,
+		PairsVisMatchedBottomTopIncompatibilityShare_cruise * 100.f);
 }
