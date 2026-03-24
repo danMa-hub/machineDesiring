@@ -1,0 +1,37 @@
+# Unreal Engine
+Binaries/
+DerivedDataCache/
+Intermediate/
+Saved/
+Build/
+.vs/
+.vscode/
+*.VC.db
+*.opensdf
+*.opendb
+*.sdf
+*.suo
+*.xcodeproj
+*.xcworkspace
+
+# Compilati
+*.pdb
+*.ilk
+*.exp
+*.lib
+
+# Asset binari UE (troppo grandi per git)
+Content/
+
+# File zip e backup
+*.zip
+Backup_preSpec/
+MachineDesiring_session_2026-03-20/
+MacchinaBaseDev/
+updated/
+
+# File temporanei e OS
+Thumbs.db
+.DS_Store
+*.tmp
+*.log
