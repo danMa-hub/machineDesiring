@@ -39,6 +39,12 @@ public:
 	UFUNCTION(BlueprintCallable, Category="Population")
 	void RegeneratePopulation(int32 NewSeed);
 
+	// --- AGGIUNTA QUESTA NUOVA FUNZIONE ---
+	// Calcola le statistiche (Compatibilità, D/S, DG) solo per gli NPC attualmente nel livello
+	UFUNCTION(BlueprintCallable, Category="Population")
+	void CalculateSubsetStats(const TArray<int32>& SpawnedIDs);
+	// --------------------------------------
+
 	UFUNCTION(BlueprintCallable, Category="Population")
 	const F_npcProfile& GetProfile(int32 NpcId) const;
 

@@ -37,6 +37,13 @@ A_npcCharacter::A_npcCharacter()
 void A_npcCharacter::BeginPlay()
 {
 	Super::BeginPlay();
+
+	// Il SkeletalMesh non deve bloccare il sight trace dell'AI Perception (ECC_Visibility).
+	// Va impostato qui (BeginPlay) e non nel costruttore: il Blueprint CDO applica le sue
+	// impostazioni collision (es. "CharacterMesh" di Manny) dopo il costruttore C++,
+	// sovrascrivendole. BeginPlay gira sull'istanza live, dopo tutta l'inizializzazione BP.
+	if (USkeletalMeshComponent* SkelMesh = GetMesh())
+		SkelMesh->SetCollisionResponseToChannel(ECC_Visibility, ECR_Ignore);
 }
 
 // ================================================================

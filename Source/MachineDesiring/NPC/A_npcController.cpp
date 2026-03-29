@@ -3,10 +3,12 @@
 #include "A_npcController.h"
 #include "A_spawnManager.h"
 #include "A_navMeshZone.h"
+#include "U_overlaySubsystem.h"
 #include "Kismet/GameplayStatics.h"
 #include "NavigationSystem.h"
 #include "EngineUtils.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "Components/CapsuleComponent.h"
 #include "DrawDebugHelpers.h"
 
 // ================================================================
@@ -1178,6 +1180,23 @@ void A_npcController::NotifyMatingStarted(int32 IdA, int32 IdB)
 {
 	if (!mySpawnManager) return;
 
+	// Notifica overlay con le soglie vis_curr dei due NPC al momento del match
+	if (UWorld* World = GetWorld())
+	{
+		if (UGameInstance* GI = World->GetGameInstance())
+		{
+			if (U_overlaySubsystem* OS = GI->GetSubsystem<U_overlaySubsystem>())
+			{
+				float ThreshA = 0.f, ThreshB = 0.f;
+				if (A_npcCharacter** CA = mySpawnManager->NpcById.Find(IdA))
+					if (*CA) ThreshA = (*CA)->myVisCurrThreshold;
+				if (A_npcCharacter** CB = mySpawnManager->NpcById.Find(IdB))
+					if (*CB) ThreshB = (*CB)->myVisCurrThreshold;
+				OS->OnMatingStarted(IdA, IdB, ThreshA, ThreshB);
+			}
+		}
+	}
+
 	for (auto& Pair : mySpawnManager->NpcById)
 	{
 		A_npcCharacter* Npc = Pair.Value;
@@ -1339,9 +1358,10 @@ void A_npcController::TickDebugDraw()
 		&& myCharacter->myCurrentState == E_myState::Cruising
 		&& myPendingDestination != FVector::ZeroVector)
 	{
+		const float CapsuleTop = myCharacter->GetCapsuleComponent()->GetScaledCapsuleHalfHeight();
 		DrawDebugLine(GetWorld(),
-			myCharacter->GetActorLocation() + FVector(0.f, 0.f, 50.f),
-			myPendingDestination             + FVector(0.f, 0.f, 50.f),
+			myCharacter->GetActorLocation() + FVector(0.f, 0.f, CapsuleTop),
+			myPendingDestination             + FVector(0.f, 0.f, CapsuleTop),
 			FColor::Cyan, false, 0.15f, 0, 3.f);
 	}
 

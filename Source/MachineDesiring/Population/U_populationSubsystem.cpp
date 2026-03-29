@@ -1204,4 +1204,84 @@ void U_populationSubsystem::BuildPopulationMetrics()
 		PairsVisCompatibilityRate * 100.f,
 		PairsVisSexCompatibilityRate_cruise * 100.f,
 		PairsVisMatchedBottomTopIncompatibilityShare_cruise * 100.f);
+
+
+}
+// ================================================================
+// CalculateSubsetStats - Calcola metriche per gli NPC spawnati
+// ================================================================
+void U_populationSubsystem::CalculateSubsetStats(const TArray<int32>& SpawnedIDs)
+{
+	const int32 SubsetN = SpawnedIDs.Num();
+	if (SubsetN <= 1) return;
+
+	int32 TotalPairs = 0;
+	int32 VisMatchPairs = 0;
+	int32 VisSexMatchPairs = 0;
+	int32 AppMatchPairs = 0;
+	int32 BtIncompatPairs = 0;
+	int32 KinkIncompatPairs = 0;
+
+	// Costante locale per la soglia Kink (se non hai una macro globale)
+	const float KINK_INCOMPAT_THRESHOLD = 0.5f;
+
+	// Loop solo sugli ID presenti nel livello (Subset)
+	for (int32 i = 0; i < SubsetN; ++i)
+	{
+		for (int32 j = i + 1; j < SubsetN; ++j)
+		{
+			int32 IdA = SpawnedIDs[i];
+			int32 IdB = SpawnedIDs[j];
+
+			TotalPairs++;
+
+			const F_npcProfile& A = GetProfile(IdA);
+			const F_npcProfile& B = GetProfile(IdB);
+
+			// Calcoli Vis e Sex
+			const float VisAB = VisAttractionMatrix[IdA * PopulationSize + IdB];
+			const float VisBA = VisAttractionMatrix[IdB * PopulationSize + IdA];
+			const float SexAB = SexAttractionMatrix[IdA * PopulationSize + IdB];
+			const float SexBA = SexAttractionMatrix[IdB * PopulationSize + IdA];
+
+			bool bVisMatch = (VisAB >= VIS_STANDARD_THRESHOLD && VisBA >= VIS_STANDARD_THRESHOLD);
+			bool bSexMatch = (SexAB >= SEX_STANDARD_THRESHOLD && SexBA >= SEX_STANDARD_THRESHOLD);
+
+			if (bVisMatch)
+			{
+				VisMatchPairs++;
+				if (bSexMatch) VisSexMatchPairs++;
+
+				// Controlli di incompatibilità bottom/top
+				if ((A.MyBottomTop > 0.6f && B.MyBottomTop > 0.6f) || 
+				    (A.MyBottomTop < 0.4f && B.MyBottomTop < 0.4f))
+				{
+					BtIncompatPairs++;
+				}
+
+				// Kink Incompatibility
+				const float KlDistAB = FMath::Abs(A.myDesired_KinkLevel - B.MyKinkLevel);
+				const float KlDistBA = FMath::Abs(B.myDesired_KinkLevel - A.MyKinkLevel);
+				
+				if (KlDistAB > KINK_INCOMPAT_THRESHOLD && KlDistBA > KINK_INCOMPAT_THRESHOLD) 
+					KinkIncompatPairs++;
+			}
+
+			// App-mode match
+			const float AppAB = AppAttractionMatrix[IdA * PopulationSize + IdB];
+			const float AppBA = AppAttractionMatrix[IdB * PopulationSize + IdA];
+			if (AppAB >= VIS_STANDARD_THRESHOLD && AppBA >= VIS_STANDARD_THRESHOLD)
+				AppMatchPairs++;
+		}
+	}
+
+	const float TotalF    = FMath::Max(1.f, static_cast<float>(TotalPairs));
+	const float VisMatchF = FMath::Max(1.f, static_cast<float>(VisMatchPairs));
+
+	// Aggiorna le variabili membro del Subsystem in base al Subset
+	PairsVisCompatibilityRate = static_cast<float>(VisMatchPairs) / TotalF;
+	PairsVisSexCompatibilityRate_cruise = static_cast<float>(VisSexMatchPairs) / TotalF;
+	PairsFullCompatibilityRateApp = static_cast<float>(AppMatchPairs) / TotalF;
+	PairsVisMatchedBottomTopIncompatibilityShare_cruise = static_cast<float>(BtIncompatPairs) / VisMatchF;
+	PairsKinkIncompatibilityShare = static_cast<float>(KinkIncompatPairs) / VisMatchF;
 }

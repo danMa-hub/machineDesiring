@@ -14,6 +14,10 @@ void UW_mainOverlay::ShowView(E_overlayView View)
 		PopulationPanel->SetVisibility(
 			View == E_overlayView::PopulationPanel ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
 
+	if (RuntimePanel)
+		RuntimePanel->SetVisibility(
+			View == E_overlayView::RuntimePanel ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
+
 	if (NpcInspector)
 		NpcInspector->SetVisibility(
 			View == E_overlayView::NpcInspector ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
@@ -23,6 +27,7 @@ void UW_mainOverlay::HideAll()
 {
 	ActiveView = E_overlayView::None;
 	if (PopulationPanel) PopulationPanel->SetVisibility(ESlateVisibility::Collapsed);
+	if (RuntimePanel)    RuntimePanel->SetVisibility(ESlateVisibility::Collapsed);
 	if (NpcInspector)    NpcInspector->SetVisibility(ESlateVisibility::Collapsed);
 }
 

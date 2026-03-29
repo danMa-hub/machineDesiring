@@ -4,6 +4,11 @@
 #include "Engine/Engine.h"
 #include "Kismet/GameplayStatics.h"
 #include "NavigationSystem.h"
+#include "U_overlaySubsystem.h"
+#include "UW_mainOverlay.h"
+#include "UW_populationPanel.h"
+#include "Kismet/GameplayStatics.h"
+#include "TimerManager.h"
 
 A_spawnManager::A_spawnManager()
 {
@@ -93,6 +98,40 @@ void A_spawnManager::SpawnNPCs()
 
 	// Analisi incrociata e sfere debug
 	RunStartupDebug(Subsystem);
+
+// 1. Raccogli gli ID degli NPC appena spawnati
+	TArray<int32> SpawnedIDs;
+	for (A_npcCharacter* NPC : ActiveNPCs)
+	{
+		if (IsValid(NPC))
+		{
+			SpawnedIDs.Add(NPC->myId); 
+		}
+	}
+
+	// 2. Calcola le statistiche (questo è immediato e va bene qui)
+	if (Subsystem)
+	{
+		Subsystem->CalculateSubsetStats(SpawnedIDs);
+	}
+
+	// 3. RITARDO DI 0.5 SECONDI PER L'INTERFACCIA
+	// Creiamo un timer che aspetta che la UI sia pronta prima di inviare i dati
+	FTimerHandle TempHandle;
+	FTimerDelegate TimerDel;
+	TimerDel.BindLambda([this, Subsystem, SpawnedIDs]()
+	{
+		if (!IsValid(this)) return; // Sicurezza extra
+
+		U_overlaySubsystem* OverlaySub = UGameplayStatics::GetGameInstance(this)->GetSubsystem<U_overlaySubsystem>();
+		if (OverlaySub && OverlaySub->MainOverlay && OverlaySub->MainOverlay->PopulationPanel)
+		{
+			OverlaySub->MainOverlay->PopulationPanel->RefreshData(Subsystem, SpawnedIDs);
+		}
+	});
+
+	// Fa partire il timer di mezzo secondo (0.5f)
+	GetWorld()->GetTimerManager().SetTimer(TempHandle, TimerDel, 0.5f, false);
 }
 
 // ================================================================
@@ -141,10 +180,10 @@ void A_spawnManager::RunStartupDebug(U_populationSubsystem* Subsystem)
 		MaxVisScore, ActiveNPCs.Num(), VIS_THRESHOLD);
 
 	// ── Riepilogo permanente ─────────────────────────────────────────
-	const FString Summary = FString::Printf(
-		TEXT("── %d NPC  |  mutual VIS: %d  |  mutual VIS+SEX: %d  |  maxVis:%.2f ──"),
-		ActiveNPCs.Num(), MutualVisCount, MutualSexCount, MaxVisScore);
-	GEngine->AddOnScreenDebugMessage(-1, TNumericLimits<float>::Max(), FColor::Green, Summary);
+	// const FString Summary = FString::Printf(
+	// 	TEXT("── %d NPC  |  mutual VIS: %d  |  mutual VIS+SEX: %d  |  maxVis:%.2f ──"),
+	// 	ActiveNPCs.Num(), MutualVisCount, MutualSexCount, MaxVisScore);
+	// GEngine->AddOnScreenDebugMessage(-1, TNumericLimits<float>::Max(), FColor::Green, Summary);
 }
 
 // ================================================================
@@ -188,17 +227,17 @@ void A_spawnManager::UpdateDebugHUD()
 	const float AvgSent     = (ValidCount > 0) ? TotalSent     / ValidCount : 0.f;
 	const float AvgReceived = (ValidCount > 0) ? TotalReceived / ValidCount : 0.f;
 
-	// Riga 1 — stati FSM
-	const FString States = FString::Printf(
-		TEXT("STATI: Cruising:%d  Mating:%d  Latency:%d  |  Signaling:%d"),
-		NCruising, NMating, NLatency, NSignaling);
+	// // Riga 1 — stati FSM
+	// const FString States = FString::Printf(
+	// 	TEXT("STATI: Cruising:%d  Mating:%d  Latency:%d  |  Signaling:%d"),
+	// 	NCruising, NMating, NLatency, NSignaling);
 
-	// Riga 2 — segnali da mySocialMemory
-	const FString Signals = FString::Printf(
-		TEXT("SEGNALI (media/NPC): inviati:%.1f  ricevuti:%.1f  |  con desired:%d/%d"),
-		AvgSent, AvgReceived, NWithDesired, ValidCount);
+	// // Riga 2 — segnali da mySocialMemory
+	// const FString Signals = FString::Printf(
+	// 	TEXT("SEGNALI (media/NPC): inviati:%.1f  ricevuti:%.1f  |  con desired:%d/%d"),
+	// 	AvgSent, AvgReceived, NWithDesired, ValidCount);
 
-	// Stampa con chiavi fisse (sovrascrive ogni update — non si accumulano)
-	GEngine->AddOnScreenDebugMessage(10, HUD_UPDATE_INTERVAL + 0.5f, FColor::Cyan,  States);
-	GEngine->AddOnScreenDebugMessage(11, HUD_UPDATE_INTERVAL + 0.5f, FColor::White, Signals);
+	// // Stampa con chiavi fisse (sovrascrive ogni update — non si accumulano)
+	// GEngine->AddOnScreenDebugMessage(10, HUD_UPDATE_INTERVAL + 0.5f, FColor::Cyan,  States);
+	// GEngine->AddOnScreenDebugMessage(11, HUD_UPDATE_INTERVAL + 0.5f, FColor::White, Signals);
 }

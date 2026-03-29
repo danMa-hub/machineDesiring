@@ -3,6 +3,7 @@
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
 #include "UW_populationPanel.h"
+#include "UW_runtimePanel.h"
 #include "UW_npcInspector.h"
 #include "UW_signalEvent.h"
 #include "UW_mainOverlay.generated.h"
@@ -13,6 +14,7 @@ enum class E_overlayView : uint8
 {
 	None            UMETA(DisplayName="None"),
 	PopulationPanel UMETA(DisplayName="PopulationPanel"),
+	RuntimePanel    UMETA(DisplayName="RuntimePanel"),
 	NpcInspector    UMETA(DisplayName="NpcInspector"),
 };
 
@@ -46,11 +48,16 @@ public:
 	UPROPERTY(BlueprintReadOnly, Category="Overlay")
 	E_overlayView ActiveView = E_overlayView::None;
 
-	// Sottowidget — assegnati in Blueprint (NativeConstruct) o da U_overlaySubsystem
-	UPROPERTY(BlueprintReadWrite, Category="Overlay")
+	// Sottowidget — opzionalmente legati al Blueprint Designer (BindWidgetOptional).
+	// Se presenti nel Designer con nome esatto → binding automatico.
+	// Se assenti → U_overlaySubsystem li crea programmaticamente come fallback.
+	UPROPERTY(BlueprintReadWrite, meta=(BindWidgetOptional), Category="Overlay")
 	TObjectPtr<UW_populationPanel> PopulationPanel;
 
-	UPROPERTY(BlueprintReadWrite, Category="Overlay")
+	UPROPERTY(BlueprintReadWrite, meta=(BindWidgetOptional), Category="Overlay")
+	TObjectPtr<UW_runtimePanel> RuntimePanel;
+
+	UPROPERTY(BlueprintReadWrite, meta=(BindWidgetOptional), Category="Overlay")
 	TObjectPtr<UW_npcInspector> NpcInspector;
 
 	// Classe per i popup segnale — assegnare in Blueprint
