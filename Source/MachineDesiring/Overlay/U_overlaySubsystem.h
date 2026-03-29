@@ -7,7 +7,7 @@
 
 class U_populationSubsystem;
 class A_spawnManager;
-class A_npcCharacter;
+class U_npcBrainComponent;
 
 // ── Evento accoppiamento — registrato da OnMatingStarted ─────────────
 struct F_matchEvent
@@ -38,7 +38,6 @@ class MACHINEDESIRING_API U_overlaySubsystem : public UGameInstanceSubsystem
 
 public:
 
-	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
 	virtual void Deinitialize() override;
 
 	// Chiamare da BeginPlay di GameMode/PlayerController dopo che il mondo è pronto.

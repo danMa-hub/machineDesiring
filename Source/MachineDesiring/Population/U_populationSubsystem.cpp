@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 #include "U_populationSubsystem.h"
 #include "Engine/DataTable.h"
@@ -1239,10 +1239,10 @@ void U_populationSubsystem::CalculateSubsetStats(const TArray<int32>& SpawnedIDs
 			const F_npcProfile& B = GetProfile(IdB);
 
 			// Calcoli Vis e Sex
-			const float VisAB = VisAttractionMatrix[IdA * PopulationSize + IdB];
-			const float VisBA = VisAttractionMatrix[IdB * PopulationSize + IdA];
-			const float SexAB = SexAttractionMatrix[IdA * PopulationSize + IdB];
-			const float SexBA = SexAttractionMatrix[IdB * PopulationSize + IdA];
+			const float VisAB = VisAttractionMatrix[IdA * Profiles.Num() + IdB];
+			const float VisBA = VisAttractionMatrix[IdB * Profiles.Num() + IdA];
+			const float SexAB = SexAttractionMatrix[IdA * Profiles.Num() + IdB];
+			const float SexBA = SexAttractionMatrix[IdB * Profiles.Num() + IdA];
 
 			bool bVisMatch = (VisAB >= VIS_STANDARD_THRESHOLD && VisBA >= VIS_STANDARD_THRESHOLD);
 			bool bSexMatch = (SexAB >= SEX_STANDARD_THRESHOLD && SexBA >= SEX_STANDARD_THRESHOLD);
@@ -1268,8 +1268,8 @@ void U_populationSubsystem::CalculateSubsetStats(const TArray<int32>& SpawnedIDs
 			}
 
 			// App-mode match
-			const float AppAB = AppAttractionMatrix[IdA * PopulationSize + IdB];
-			const float AppBA = AppAttractionMatrix[IdB * PopulationSize + IdA];
+			const float AppAB = AppAttractionMatrix[IdA * Profiles.Num() + IdB];
+			const float AppBA = AppAttractionMatrix[IdB * Profiles.Num() + IdA];
 			if (AppAB >= VIS_STANDARD_THRESHOLD && AppBA >= VIS_STANDARD_THRESHOLD)
 				AppMatchPairs++;
 		}

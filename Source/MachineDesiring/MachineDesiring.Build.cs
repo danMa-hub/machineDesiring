@@ -7,23 +7,39 @@ public class MachineDesiring : ModuleRules
 	public MachineDesiring(ReadOnlyTargetRules Target) : base(Target)
 	{
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
-	
-		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "EnhancedInput", "AIModule",  "NavigationSystem" });
+
+		PublicDependencyModuleNames.AddRange(new string[]
+		{
+			"Core",
+			"CoreUObject",
+			"Engine",
+			"InputCore",
+			"EnhancedInput",
+			"AIModule",
+			"NavigationSystem",
+
+			// ── Mutable (CustomizableObjects) ─────────────────────────
+			// Abilita dopo aver installato il plugin Mutable in UE5:
+			//   Edit → Plugins → cerca "Mutable" → Enable → riavvia
+			// Poi decommentare le righe seguenti:
+			// "MutableRuntime",
+			// "CustomizableObject",
+		});
 
 		PublicIncludePaths.AddRange(new string[]
-        {
-            "MachineDesiring/Population",
-            "MachineDesiring/NPC",
-            "MachineDesiring/Simulation",
-            "MachineDesiring/Core",
-            "MachineDesiring/Overlay",
-        });
+		{
+			"MachineDesiring/Population",
+			"MachineDesiring/NPC",
+			"MachineDesiring/Simulation",
+			"MachineDesiring/Core",
+			"MachineDesiring/Overlay",
+		});
 
-		PrivateDependencyModuleNames.AddRange(new string[] { "UMG", "Slate", "SlateCore" });
-		
-		// Uncomment if you are using online features
-		// PrivateDependencyModuleNames.Add("OnlineSubsystem");
-
-		// To include OnlineSubsystemSteam, add it to the plugins section in your uproject file with the Enabled attribute set to true
+		PrivateDependencyModuleNames.AddRange(new string[]
+		{
+			"UMG",
+			"Slate",
+			"SlateCore",
+		});
 	}
 }

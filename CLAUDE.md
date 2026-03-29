@@ -5,7 +5,7 @@
 
 ## Progetto
 
-Installazione artistica interattiva in UE5.7. 700 NPC autonomi simulano dinamiche relazionali e sessuali della comunità gay maschile. Omaggio alla Macchina Celibe di Duchamp.
+Installazione artistica interattiva in UE5.7. 100 NPC autonomi simulano dinamiche relazionali e sessuali della comunità gay maschile. Omaggio alla Macchina Celibe di Duchamp.
 
 L'utente sta imparando C++ in UE5. Spiega ogni passo chiaramente. Implementa un passo alla volta. Compila prima di procedere.
 
@@ -16,10 +16,18 @@ L'utente sta imparando C++ in UE5. Spiega ogni passo chiaramente. Implementa un 
 **Build:**
 ```
 VS Code:    Ctrl+Shift+B  →  "Build MachineDesiringEditor (Development)"  [default]
-Claude:     UnrealBuildTool.exe MachineDesiringEditor Win64 Development -Project="...uproject"
+Claude:     "C:/Program Files/Epic Games/UE_5.7/Engine/Build/BatchFiles/Build.bat"
+            MachineDesiringEditor Win64 Development -Project="...uproject" -WaitMutex
 Editor:     Tools > Compile (solo modifiche minori, hot reload)
 ```
-Dopo C++: chiudi editor UE5 → build → riapri. Hot reload funziona solo per modifiche minori.
+Dopo C++: chiudi editor UE5 completamente → build → riapri. Hot reload funziona solo per modifiche minori.
+
+**Plugin richiesti (abilitare in Edit → Plugins):**
+- `Mover` (experimental) — movimento GASP/Mover 2.0
+- `Motion Matching` — locomotion system
+- `Chooser Framework` (experimental) — selezione animazioni GASP
+- `Animation Warping` (experimental)
+- `Motion Warping`
 
 ---
 
@@ -29,21 +37,30 @@ Dopo C++: chiudi editor UE5 → build → riapri. Hot reload funziona solo per m
 Source/MachineDesiring/
   Population/
     F_npcProfile.h/.cpp          ← profilo NPC + enum + pesi
-    U_populationSubsystem.h/.cpp ← 700 profili + matrici attrazione
+    U_populationSubsystem.h/.cpp ← 700 profili + matrici attrazione N×N
 
   NPC/
     NpcMemoryTypes.h             ← enum e struct condivisi (non modificare)
     A_navMeshZone.h/.cpp         ← zone Idle/Mating sul NavMesh
-    A_npcCharacter.h/.cpp        ← character base: identità, FSM, memoria sociale
-    A_npcController.h/.cpp       ← logica cruising: percezione, movimento, segnalazione, mating
-    A_npcController.h/.cpp       ← logica cruising: segnalazione, soglie, Lost
-    A_playerController.h/.cpp    ← toggle debug (tasto 1 = overlay, tasto 2 = ID)
-    A_spawnManager.h/.cpp        ← spawn subset da pool 700, NpcById TMap
+    U_npcBrainComponent.h/.cpp   ← TUTTI i dati runtime NPC (myId, FSM, soglie, memoria)
+                                    Aggiungibile a qualsiasi APawn — GASP, ThirdPerson, MetaHuman
+    A_npcCharacter.h/.cpp        ← shell minima ACharacter (parent alternativo futuro, NON usata da GASP)
+    A_npcController.h/.cpp       ← logica: percezione, segnalazione, soglie, mating trigger
+                                    Movimento delegato al Blueprint via BlueprintImplementableEvent
+    A_playerController.h/.cpp    ← toggle debug (tasto 1=draw, 2=ID, 3=PopPanel, 4=RuntimePanel)
+    A_spawnManager.h/.cpp        ← spawn APawn generici, NpcById TMap<int32, U_npcBrainComponent*>
+
+  Overlay/
+    U_overlaySubsystem.h/.cpp    ← aggregatore dati UI, timer refresh
+    UW_mainOverlay.h/.cpp        ← widget principale, switch viste
+    UW_populationPanel.h/.cpp    ← VIEW 1: statistiche popolazione subset
+    UW_runtimePanel.h/.cpp       ← VIEW 2: runtime panel (WIP)
 ```
 
 **Build.cs dipendenze:**
 ```
 Core, CoreUObject, Engine, InputCore, EnhancedInput, AIModule, NavigationSystem
+UMG, Slate, SlateCore  (PrivateDependency)
 ```
 `PublicIncludePaths` copre tutte le sottocartelle — usa include flat nei .cpp.
 
@@ -55,8 +72,8 @@ Core, CoreUObject, Engine, InputCore, EnhancedInput, AIModule, NavigationSystem
 | Prefisso | Tipo | Esempio |
 |---|---|---|
 | `A_` | Actor | `A_npcCharacter`, `A_spawnManager` |
-| `U_` | UObject/Subsystem | `U_populationSubsystem` |
-| `F_` | Struct | `F_npcProfile`, `F_otherIDMemory` |
+| `U_` | UObject/Subsystem/Component | `U_populationSubsystem`, `U_npcBrainComponent` |
+| `F_` | Struct UE5 (con USTRUCT/GENERATED_BODY) | `F_npcProfile`, `F_otherIDMemory` |
 | `E_` | Enum | `E_myState`, `E_npcEthnicity` |
 
 ### Variabili runtime NPC
@@ -67,6 +84,7 @@ Core, CoreUObject, Engine, InputCore, EnhancedInput, AIModule, NavigationSystem
 | `myOut_` | score/segnale uscente | `myOut_signalValue` |
 | `myIn_` | score/segnale entrante | `myIn_signalValue` |
 | `b_my` | bool per-NPC | `b_myIsSignaling` |
+| `myTimer_` | timer handle | `myTimer_SignalingLogic` |
 | `wVis_`/`wSex_`/`wSin_` | pesi normalizzati flat | `wVis_Muscle` |
 
 **Nome file = nome classe esatto:** `A_npcCharacter.h/.cpp`
@@ -99,33 +117,79 @@ float           myTLastSeen          // GetWorld()->GetTimeSeconds()
 
 ---
 
+## Architettura GASP/Mover (refactoring 2026-03-29)
+
+### Problema chiave
+`SandboxCharacter_Mover` è un Blueprint (.uasset) — impossibile ereditare in C++.
+`MY_MOVERTEST` è una subclass Blueprint di `SandboxCharacter_Mover`.
+
+### Soluzione: U_npcBrainComponent
+Tutti i dati NPC sono su `U_npcBrainComponent` (UActorComponent), aggiungibile a qualsiasi APawn.
+`BP_NPC_Character` eredita `MY_MOVERTEST` e ha il BrainComponent aggiunto nel Blueprint Editor.
+
+### Split C++ / Blueprint
+| C++ (A_npcController) | Blueprint (BP_NPC_AIController) |
+|---|---|
+| Calcola destinazione NavMesh | Esegue movimento fisico (CharacterMover) |
+| Decide sub-stato, timing fasi | Gestisce animazioni (Motion Matching) |
+| Segnalazione, soglie, mating trigger | Implementa BP_Execute* events |
+| Percezione entry point | Configura AIPerception, chiama OnNearbyNPCsUpdated |
+
+### Interfaccia C++ → Blueprint (BlueprintImplementableEvent su A_npcController)
+```cpp
+BP_ExecuteRandomWalk(FVector Destination)
+BP_ExecuteIdleWait(FVector Location, float Duration, float BaseYaw, float PhaseOffset)
+BP_ExecuteMatingWait(FVector Location, float Duration, float BaseYaw, float PhaseOffset)
+BP_ExecuteTargetWalk(FVector Destination, float SpeedMult, int32 TargetId)
+BP_ExecuteMatingMove(FVector Destination)
+BP_OnCruisingSubStateChanged(E_cruisingSubState NewSubState)
+```
+
+### Interfaccia Blueprint → C++ (BlueprintCallable su A_npcController)
+```cpp
+OnBPPhaseDone()        // fine fase RandomWalk/IdleWait/TargetWalk/MatingWait → ChooseNext
+OnBPMatingArrived()    // arrivato al punto mating → placeholder U_matingLogic
+OnBPMatingFailed()     // path fallito → retry dopo 2s
+```
+
+### Parametri Mutable (su U_npcBrainComponent, letti dal Blueprint)
+```cpp
+MutableMuscle, MutableSlim, MutableHeight, MutableAge,
+MutableBodyDisplay, MutableHair, MutableEthnicity
+// Popolati da InitWithId() → ExtractMutableParams(F_npcProfile)
+// Blueprint li legge per configurare UCustomizableSkeletalComponent (quando Mutable installato)
+BP_ApplyMutableProfile()  // BlueprintImplementableEvent — chiamato da SpawnManager dopo spawn
+```
+
+---
+
 ## Stato implementazione
 
 ### U_populationSubsystem
 - 700 `F_npcProfile` generati con seed deterministico (Box-Muller, FRandomStream)
-- `VisAttractionMatrix` / `SexAttractionMatrix` N×N pre-calcolate
+- `VisAttractionMatrix` / `SexAttractionMatrix` / `AppAttractionMatrix` N×N pre-calcolate
 - `GetVisScore(ObsId, TgtId)` / `GetSexScore(ObsId, TgtId)` — O(1)
 - `GetMeshScaleZ(NpcId)` — scala Z [0.5, 4.0] normalizzata su appeal visivo
+- `CalculateSubsetStats(SpawnedIDs)` — metriche sul subset spawnato
 
-### A_npcCharacter
+### U_npcBrainComponent (dati runtime NPC)
 ```cpp
 int32                              myId
 E_myState                          myCurrentState      // Cruising / Mating / Latency
-TMap<int32, F_otherIDMemory>       mySocialMemory      // no UPROPERTY
+TMap<int32, F_otherIDMemory>       mySocialMemory      // no UPROPERTY (struct plain)
 TArray<int32>                      myDesiredRank       // max 20, ordinato per VisScore desc
 TSet<int32>                        myStaticVisBlacklist
 bool                               b_myIsSignaling
-TWeakObjectPtr<A_npcCharacter>     mySignalTarget
+TWeakObjectPtr<U_npcBrainComponent> mySignalTarget
 float  myVisCurrThreshold / myVisMinThreshold / myVisStartThreshold
 float  mySexCurrThreshold / mySexMinThreshold / mySexStartThreshold
-float  myMaxWalkSpeed       // [70, 100] cm/s, deterministico per-NPC
+float  myMaxWalkSpeed       // [70, 100] cm/s, deterministico per-NPC (seed = myId+10000)
 float  myRotationRate       // 60°/s default
-// Materiali per sub-stato (assegnabili in BP_NPC_Character):
+// Materiali per sub-stato debug (assegnabili in Blueprint):
 UMaterialInterface* Mat_RandomWalk / Mat_Idle / Mat_Mating / Mat_TargetWalk
 ```
-- `myVisMinThreshold`: gauss(0.10, 0.02) clamp [0.05, 0.20], seed = myId
-- `mySexMinThreshold`: 0.40 fisso
-- `SetSubStateMaterial`: itera tutti gli `USkeletalMeshComponent` (non solo `GetMesh()`)
+- `myVisMinThreshold`: gauss(0.35-drop, 0.04) clamp, seed = myId+500
+- `SetSubStateMaterial`: itera tutti gli `USkeletalMeshComponent` dell'owner
 
 ### A_npcController
 
@@ -143,27 +207,33 @@ SIGNALING_TIMER_INTERVAL = 2.5f
 
 // RandomWalk
 WALK_RADIUS_MIN/MAX      = 500 / 2000 cm
-WALK_DURATION_MIN/MAX    = 30 / 90 s
+// Durata gestita dal Blueprint → OnBPPhaseDone() [riferimento: 30-90s]
 
 // TargetWalk
-TARGETWALK_RADIUS        = 150 cm   // raggio punto random attorno al target
-TARGETWALK_FORWARD_OFFSET= 300 cm   // offset avanti inseguitore (supera il target)
+TARGETWALK_RADIUS        = 150 cm
+TARGETWALK_FORWARD_OFFSET= 300 cm   // offset avanti lungo il forward del TARGET
+TARGETWALK_REACH_DIST    = 150 cm
 TARGETWALK_SPEED_MULT    = 1.8f
-TARGETWALK_DURATION_MIN/MAX = 50 / 120 s
+// Durata gestita dal Blueprint → OnBPPhaseDone() [riferimento: 50-120s]
 
-// Idle
+// Idle / MatingWait (via StartZoneWait)
 IDLE_DURATION_MIN/MAX    = 10 / 55 s
-IDLE_SHIFT_RADIUS        = 80 cm
-IDLE_SEPARATION_WEIGHT   = 0.15f    // bassa → folla compatta
-WALK_SEPARATION_WEIGHT   = 1.0f
+IDLE_YAW_OFFSET          = 40°
+```
 
-// Stuck
-STUCK_MIN_DISTANCE       = 40 cm in 2s
+**Timer attivi per NPC:**
+```
+myTimer_InitialMovement  — 0.2s one-shot — startup ritardato dopo OnPossess
+myTimer_SignalingLogic   — 2.5s loop — scan handshake
+myTimer_LostCheck        — 300s loop — scansione Lost
+myTimer_TargetWalkTick   — 2s loop — aggiorna destinazione TargetWalk
+myTimer_MatingRetry      — 2s one-shot — retry mating se path fallisce
+myTimer_DebugDraw        — 0.2s loop — label debug (early return se debug off)
 ```
 
 **Percezione (Blueprint-side):**
 - AIPerception con sight cone (2000cm, 60°) su `BP_NPC_AIController`
-- Evento: `OnTargetPerceptionUpdated` (per-actor, non batch)
+- `OnTargetPerceptionUpdated` (per-actor):
   - bCurrentlySensed=true → `OnNearbyNPCsUpdated([id])`
   - bCurrentlySensed=false → `OnNpcLostFromSight(id)`
 - `ProcessPerceivedNpc`: blacklist O(1) → TMap.Find O(1) → VisScore → rank
@@ -175,15 +245,14 @@ StartInitialMovement (0.2s dopo OnPossess):
   id%2==0  → IdleWait  (~45%)
   else     → RandomWalk (~50%)
 
-RandomWalk:  anello [500,2000]cm, pre-rotazione, durata [30,90]s
-IdleWait:    zona Idle più vicina, sosta [10,55]s, oscillazione sguardo sin wave,
-             micro-shift 80cm ogni 2s (mantiene crowd agent attivo)
-MatingWait:  identico IdleWait ma su zone Mating
-TargetWalk:  insegue top-5 desiderati (solo Cruising), vel 1.8×,
-             offset 300cm avanti, TickTargetWalk 2s loop, durata [50,120]s
+RandomWalk:   anello [500,2000]cm → BP_ExecuteRandomWalk(Destination)
+IdleWait:     zona Idle più vicina → BP_ExecuteIdleWait(Location, Duration, BaseYaw, PhaseOffset)
+MatingWait:   zona Mating più vicina → BP_ExecuteMatingWait(...) [stesso helper StartZoneWait]
+TargetWalk:   insegue top-5 desiderati (solo Cruising), vel 1.8×, TickTargetWalk 2s loop
+              → BP_ExecuteTargetWalk(Destination, SpeedMult, TargetId)
 
-ChooseAndStartNextCruisingSubState: 3-way random al termine di ogni fase
-OnMoveCompleted: dispatcher — Mating retry | RandomWalk/TargetWalk loop | Idle arrivo | shift ciclo
+ChooseAndStartNextCruisingSubState: 3-way random al termine di ogni fase (OnBPPhaseDone)
+StartZoneWait(ZoneType, SubState): helper comune per IdleWait e MatingWait
 ```
 
 **Segnalazione (TickSignalingLogic ogni 2.5s):**
@@ -204,13 +273,13 @@ accumulo myTimeWithoutDesired → DropVisThresholdAndPromote se ≥ myThresholdD
 **ExchangeSignals:**
 1. Calcola SentByA (rank di B in A) e SentByB (rank di A in B, 0 se assente)
 2. Incrementa `myOut` solo se stato non terminale
-3. **Sincronizzazione forzata:** `RecA->myIn = RecB->myOut` e `RecB->myIn = RecA->myOut`
-   → garantisce simmetria indipendentemente da chi inizia lo scambio
-4. Debug line: verde se reciproco, rosso se unilaterale
-5. `OnSignalExchanged(A)` → se A non GaveUp → `OnSignalExchanged(B)`
+3. **Sincronizzazione forzata:** `RecA->myIn = RecB->myOut` e viceversa
+4. Debug line: verde se reciproco, rosso se unilaterale (solo se bDebugDrawEnabled)
+5. `OnSignalExchanged(A)` → ri-cerca RecA (potrebbe essere cambiato) → se A non GaveUp → `OnSignalExchanged(B)`
 
 **OnSignalExchanged:**
-- Guard: stato già terminale → return (evita log duplicati)
+- Guard: `myCurrentState == Mating` → return (previene double trigger)
+- Guard: stato record terminale → return
 - GaveUp: out ≥ 5 && in < 1 → GaveUp, rimosso da rank
 - Mating trigger: out ≥ 5 && in ≥ 5 su entrambi i lati → SetState(Mating) su entrambi
   → `NotifyMatingStarted` → `StartMatingMove` (stesso punto per entrambi)
@@ -218,10 +287,9 @@ accumulo myTimeWithoutDesired → DropVisThresholdAndPromote se ≥ myThresholdD
 **ReleaseSignalLock:** non resetta b_myIsSignaling su NPC in stato Mating.
 
 **Mating:**
-- `NotifyMatingStarted(IdA, IdB)`: marca GaveUp in tutti gli NPC Cruising che avevano IdA/IdB nel rank
-- `StartMatingMove(Point)`: clears TUTTI i timer cruising, MoveToLocation(Point, 50cm)
-  - path fallito → retry dopo 2s via myTimer_MatingRetry
-- `StartTargetWalk` / `TickTargetWalk`: skippano target non in Cruising
+- `NotifyMatingStarted(IdA, IdB)`: notifica overlay + marca GaveUp in tutti gli NPC che avevano IdA/IdB nel rank
+- `StartMatingMove(Point)`: clears TUTTI i timer cruising → `BP_ExecuteMatingMove(Point)`
+  - path fallito → `OnBPMatingFailed` → retry dopo 2s (CreateWeakLambda)
 - `StartMatingMove` e `OnSignalExchanged` sono **public** (chiamate cross-controller)
 
 **Memoria:**
@@ -230,10 +298,10 @@ accumulo myTimeWithoutDesired → DropVisThresholdAndPromote se ≥ myThresholdD
 - `SortDesiredRank`: sort per VisScore desc, chiamato dopo ogni Add
 
 **Debug:**
-- `bDebugDrawEnabled` (tasto 1): label sub-stato colorato sopra NPC
+- `bDebugDrawEnabled` (tasto 1): label sub-stato colorato sopra NPC + linee segnalazione
 - `bDebugIdEnabled` (tasto 2): ID overlay, mostra "ID → targetID" in TargetWalk
-- Linea cyan: destinazione TargetWalk (sempre visibile)
-- Timer DebugDraw: 0.2s loop → `TickDebugDraw`
+- Timer DebugDraw: 0.2s loop → `TickDebugDraw` (early return se entrambi i flag off)
+- Getter `GetCruisingSubState()` esposto per overlay inspector
 
 **Parametri editabili:**
 ```cpp
@@ -257,10 +325,10 @@ Ogni 2.5s: scansione `myDesiredRank[0..4]`, primo valido → handshake. Valore s
 Se `myDesiredRank` è vuoto per `myThresholdDropDelay`s, `myVisCurrThreshold` scende di `myVisThresholdDropStep`. Promozione retroattiva NotYetDesired → Desired.
 
 ### GaveUp
-`out ≥ 5 && in < 1` → GaveUp, rimosso da rank. Guard in OnSignalExchanged previene doppi effetti.
+`out ≥ 5 && in < 1` → GaveUp, rimosso da rank.
 
 ### Mating trigger
-`out ≥ 5 && in ≥ 5` su entrambi i lati → Mating. Punto incontro = punto random in zona Mating più vicina al midpoint.
+`out ≥ 5 && in ≥ 5` su entrambi i lati → Mating. Punto incontro = punto random in zona Mating più vicina al midpoint. Guard `myCurrentState == Mating` previene double trigger.
 
 ### SexBlocked
 Permanente. Mai rimosso. Da implementare in U_matingLogic (Branch B).
@@ -274,14 +342,20 @@ Non visto da >600s → Lost, rimosso da rank. Al re-avvistamento → rivalutazio
 
 ```
 Content/NPC/
-  BP_NPC_Character     ← eredita A_npcCharacter
+  BP_NPC_Character     ← eredita MY_MOVERTEST (subclass Blueprint di SandboxCharacter_Mover)
+                          Ha U_npcBrainComponent aggiunto nel Blueprint Editor
                           Auto Possess AI: Placed in World or Spawned
                           AI Controller Class: BP_NPC_AIController
+                          Implementa: BP_Execute* events, BP_ApplyMutableProfile
   BP_NPC_AIController  ← eredita A_npcController
                           AIPerception: sight 2000cm, 60°, tutte le affiliazioni ON
                           OnTargetPerceptionUpdated (per-actor):
                             true  → OnNearbyNPCsUpdated([id])
                             false → OnNpcLostFromSight(id)
+
+Content/Blueprints/
+  SandboxCharacter_Mover  ← GASP base character (non modificare)
+  MY_MOVERTEST            ← subclass di SandboxCharacter_Mover (locomotion GASP)
 
 Content/Zones/
   A_navMeshZone actors ← ZoneType: Idle o Mating, ZoneShape: Sphere o Box
@@ -291,9 +365,11 @@ Content/Zones/
 
 ## Prossimo step
 
-- **U_matingLogic**: logica post-arrivo in zona Mating, Branch A/B, SexBlocked
-- **Stato Latency**: cooldown post-mating
-- **NotifyMatingStarted**: segnata TODO, rivisitare dopo U_matingLogic
+- **Implementare BP_Execute* in BP_NPC_AIController** — movimento reale con CharacterMover/NavMesh
+- **U_matingLogic** — logica post-arrivo zona Mating, Branch A/B, SexBlocked
+- **Stato Latency** — cooldown post-mating
+- **VIEW 2 (UW_runtimePanel)** — completare pannello runtime
+- **Installare plugin Mutable** → decommentare moduli in Build.cs → implementare BP_ApplyMutableProfile
 
 ---
 
@@ -302,9 +378,18 @@ Content/Zones/
 1. **No `TMap`/`TArray` con `{}` initializer lists** come costanti statiche → C-style array
 2. **No path subfolder negli include** → `#include "F_npcProfile.h"` non `#include "Population/..."`
 3. **`generated.h` sempre ultimo** include in ogni header
-4. **`UPROPERTY()`** su ogni `TObjectPtr` per GC
+4. **`UPROPERTY()`** su ogni `TObjectPtr` e su `TMap<K, UObject*>` per GC
+   - `TMap<int32, F_struct>` senza UPROPERTY è corretto (struct plain, non UObject)
+   - `TMap<int32, UObject*>` **con** UPROPERTY è obbligatorio (GC deve tracciare i valori)
 5. **`GENERATED_BODY()`** in ogni `USTRUCT` / `UCLASS`
 6. **RNG deterministico**: `FRandomStream` per profili, `RNG.FRandRange` per varianza runtime
-7. **`TMap<int32, F_otherIDMemory>`** senza `UPROPERTY` — corretto, `int32` non è UObject
-8. **`TWeakObjectPtr`** per riferimenti cross-NPC — previene crash se target distrutto
-9. **TMap pointer instability**: non salvare puntatori a campi di struct in TMap — rehash invalida gli indirizzi
+7. **`TWeakObjectPtr`** per riferimenti cross-NPC — previene crash se target distrutto
+8. **TMap pointer instability**: non salvare puntatori a campi di struct in TMap — rehash invalida gli indirizzi
+9. **`GetGameInstance()` può restituire nullptr**: sempre null-check prima di `->GetSubsystem<>()`
+   ```cpp
+   if (UGameInstance* GI = UGameplayStatics::GetGameInstance(this))
+       MySubsystem = GI->GetSubsystem<U_mySubsystem>();
+   ```
+10. **Lambda con `[this]` nei timer**: usare `FTimerDelegate::CreateWeakLambda(this, [...](){ ... })`
+    invece di lambda raw — evita UB se `this` viene distrutto prima del timer
+11. **`IsValid(Ptr)`** per UObject — non serve `IsValid(Cast<UObject>(Ptr))` se il tipo è già UObject

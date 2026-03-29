@@ -1,7 +1,8 @@
 #include "U_overlaySubsystem.h"
 #include "U_populationSubsystem.h"
 #include "A_spawnManager.h"
-#include "A_npcCharacter.h"
+#include "A_npcController.h"
+#include "U_npcBrainComponent.h"
 #include "NpcMemoryTypes.h"
 #include "UW_mainOverlay.h"
 #include "UW_populationPanel.h"
@@ -10,11 +11,6 @@
 #include "Kismet/GameplayStatics.h"
 #include "TimerManager.h"
 #include "EngineUtils.h"
-
-void U_overlaySubsystem::Initialize(FSubsystemCollectionBase& Collection)
-{
-	Super::Initialize(Collection);
-}
 
 void U_overlaySubsystem::Deinitialize()
 {
@@ -120,10 +116,10 @@ void U_overlaySubsystem::RefreshNpcInspector()
 {
 	if (!MainOverlay || !MainOverlay->NpcInspector || !myPopSubsystem || !mySpawnManager) return;
 
-	A_npcCharacter** Found = mySpawnManager->NpcById.Find(myInspectedNpcId);
+	U_npcBrainComponent** Found = mySpawnManager->NpcById.Find(myInspectedNpcId);
 	if (!Found || !(*Found)) return;
 
-	A_npcCharacter* NPC = *Found;
+	U_npcBrainComponent* Brain = *Found;
 
 	MainOverlay->NpcInspector->RefreshNpc(
 		myInspectedNpcId,
@@ -131,17 +127,23 @@ void U_overlaySubsystem::RefreshNpcInspector()
 		myPopSubsystem->GetPopSexAttraction(myInspectedNpcId),
 		myPopSubsystem->GetPopAppAttraction(myInspectedNpcId),
 		myPopSubsystem->GetVisAttractionBalance(myInspectedNpcId),
-		NPC->myVisStartThreshold,
-		NPC->myVisCurrThreshold,
-		NPC->myVisMinThreshold,
-		NPC->mySexStartThreshold,
-		NPC->mySexCurrThreshold,
-		NPC->mySexMinThreshold,
+		Brain->myVisStartThreshold,
+		Brain->myVisCurrThreshold,
+		Brain->myVisMinThreshold,
+		Brain->mySexStartThreshold,
+		Brain->mySexCurrThreshold,
+		Brain->mySexMinThreshold,
 		myPopSubsystem->GetOutVisAttractionCount(myInspectedNpcId),
 		myPopSubsystem->GetInVisAttractionCount(myInspectedNpcId),
-		NPC->myDesiredRank.Num(),
-		NPC->myCurrentState,
-		E_cruisingSubState::RandomWalk  // TODO: esporre myCruisingSubState da A_npcController
+		Brain->myDesiredRank.Num(),
+		Brain->myCurrentState,
+		[&]() -> E_cruisingSubState {
+			APawn* Pawn = Cast<APawn>(Brain->GetOwner());
+			if (Pawn)
+				if (A_npcController* Ctrl = Cast<A_npcController>(Pawn->GetController()))
+					return Ctrl->GetCruisingSubState();
+			return E_cruisingSubState::RandomWalk;
+		}()
 	);
 }
 
@@ -220,21 +222,21 @@ void U_overlaySubsystem::SampleRuntimeData()
 
 	for (auto& Pair : mySpawnManager->NpcById)
 	{
-		A_npcCharacter* Npc = Pair.Value;
-		if (!Npc || !IsValid(Npc)) continue;
+		U_npcBrainComponent* Brain = Pair.Value;
+		if (!Brain) continue;
 		NpcCount++;
 
 		// Distribuzione vis_curr_threshold (range atteso [0.05, 0.35])
 		const int32 VisIdx = FMath::Clamp(
-			FMath::FloorToInt(Npc->myVisCurrThreshold * BINS), 0, BINS - 1);
+			FMath::FloorToInt(Brain->myVisCurrThreshold * BINS), 0, BINS - 1);
 		myH_VisCurrThresh[VisIdx]++;
 
 		// Distribuzione lunghezza lista desiderati (0..20)
-		const int32 ListLen = FMath::Clamp(Npc->myDesiredRank.Num(), 0, 20);
+		const int32 ListLen = FMath::Clamp(Brain->myDesiredRank.Num(), 0, 20);
 		myH_DesiredListLen[ListLen]++;
 
 		// Conteggio GaveUp in mySocialMemory
-		for (auto& MemPair : Npc->mySocialMemory)
+		for (auto& MemPair : Brain->mySocialMemory)
 			if (MemPair.Value.state == E_otherIDState::GaveUp)
 				TotalGaveUp++;
 	}
