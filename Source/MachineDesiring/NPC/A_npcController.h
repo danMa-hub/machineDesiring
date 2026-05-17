@@ -49,7 +49,7 @@ public:
 	// ── Percezione — entry point Blueprint ─────────────────────
 
 	UPROPERTY(BlueprintReadWrite, Category="NPC|Perception")
-	TArray<int32> myNearbyNPCs;
+	TSet<int32> myNearbyNPCs;
 
 	// Chiamato dal Blueprint (OnTargetPerceptionUpdated, bCurrentlySensed=true)
 	UFUNCTION(BlueprintCallable, Category="NPC|Perception")
@@ -71,6 +71,23 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="NPC|Threshold")
 	float myVisThresholdDropStep  = 0.05f;
+
+	// Dot product tra direzione sguardo e direzione movimento (piano 2D).
+	//  1.0 = sguardo allineato al movimento
+	//  0.0 = sguardo laterale (90°)
+	// -1.0 = sguardo opposto al movimento
+	// Aggiornato ogni 0.5s in TickGaze. Leggibile dal Blueprint per Stop Movement.
+	UPROPERTY(BlueprintReadOnly, Category="NPC|Gaze")
+	float myGazeWalkDot = 1.0f;
+
+	// ── Gaze obstacle — tweak in editor senza ricompilare ──────────
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="NPC|Gaze")
+	float myGazeObstacleEnterDist = 140.f;  // < X cm → P1 Obstacle
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="NPC|Gaze")
+	float myGazeObstacleExitDist  = 180.f;  // > X cm → esce da P1
+
 
 	// ── Callbacks Blueprint → C++ ───────────────────────────────
 
@@ -120,6 +137,15 @@ public:
 	UFUNCTION(BlueprintImplementableEvent, Category="NPC|Movement")
 	void BP_OnCruisingSubStateChanged(E_cruisingSubState NewSubState);
 
+	// Passa il target actor all'AnimBP per il gaze IK.
+	// Chiamare solo quando il target cambia.
+	UFUNCTION(BlueprintImplementableEvent, Category="NPC|Gaze")
+	void BP_ExecuteGazeLookAt(APawn* TargetPawn);
+
+	// Rimuove il gaze target — blend verso forward neutro.
+	UFUNCTION(BlueprintImplementableEvent, Category="NPC|Gaze")
+	void BP_ClearGaze();
+
 	// ── Cross-controller — chiamati dal controller del partner ──
 
 	// Chiamato dopo ogni handshake completato. Gestisce GaveUp e mating trigger.
@@ -135,8 +161,46 @@ public:
 
 	static bool bDebugDrawEnabled;
 	static bool bDebugIdEnabled;
+	static bool bDebugGazeEnabled;
 
 private:
+
+	// ── Sguardo ──────────────────────────────────────────────────
+
+	// Modalità gaze corrente — usata per debug e logica priorità.
+	E_gazeMode myCurrentGazeMode = E_gazeMode::None;
+
+	// ID del soggetto attualmente guardato.
+	// -1 = nessuno, -2 = player/camera, >= 0 = NPC ID.
+	// Cache per evitare aggiornamenti ridondanti all'AnimBP.
+	int32 myGazeTargetId = -1;
+
+	// Lista NPC visibili ordinati per VisScore desc — ciclo di scansione sguardo.
+	TArray<int32> myGazeScanList;
+
+	// Indice corrente nel ciclo myGazeScanList.
+	int32 myGazeScanIndex = 0;
+
+	// P1 Obstacle: poll ogni 0.5s — rileva ostacoli < 140cm e uscita isteresi.
+	void TickGaze();
+
+	// Aggiorna myGazeWalkDot ogni 1s — solo se in movimento, altrimenti resetta a 1.0.
+	void TickGazeWalkCheck();
+
+
+	// Avanza al prossimo NPC nel ciclo di scansione e schedula il timer per la sua durata.
+	void AdvanceGazeScan();
+
+	// Ricostruisce myGazeScanList da myNearbyNPCs, ordinata per VisScore desc.
+	// Chiamata ogni volta che myNearbyNPCs cambia.
+	void RebuildGazeScanList();
+
+	// Durata dello sguardo verso Id: proporzionale a VisScore.
+	// Blacklist → 0.1–0.3s. VisScore [0,1] → lerp [0.2s, 3.0s].
+	float GazeDurationForId(int32 Id) const;
+
+	// Aggiorna gaze solo se mode/target sono cambiati — evita chiamate BP ridondanti.
+	void SetGaze(E_gazeMode NewMode, int32 NewId, APawn* NewPawn);
 
 	// ── Cache riferimenti ────────────────────────────────────────
 
@@ -161,6 +225,11 @@ private:
 	FTimerHandle myTimer_MatingRetry;       // 2s one-shot — retry mating se path fallisce
 	FTimerHandle myTimer_DebugDraw;         // 0.2s loop — label debug sopra pawn
 	FTimerHandle myTimer_InitialMovement;   // 0.2s one-shot — startup ritardato
+	FTimerHandle myTimer_GazeTick;          // 0.5s loop — P1 obstacle detection
+	FTimerHandle myTimer_GazeScan;          // one-shot variabile — avanza ciclo scansione
+	FTimerHandle myTimer_GazeRebuild;       // 2.0s loop — rebuild lista prossimità
+	FTimerHandle myTimer_GazeWalkCheck;     // 1.0s loop — aggiorna myGazeWalkDot
+	FTimerHandle myTimer_ReleaseSignal;     // 1.5s one-shot — rilascia lock segnalazione
 
 	// ── Stato movimento ──────────────────────────────────────
 

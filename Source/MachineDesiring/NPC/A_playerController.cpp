@@ -19,8 +19,9 @@ void A_playerController::BeginPlay()
 	SetInputMode(FInputModeGameOnly());
 
 	// Reset stato debug (le statiche persistono tra sessioni PIE)
-	A_npcController::bDebugDrawEnabled = false;
-	A_npcController::bDebugIdEnabled   = false;
+	A_npcController::bDebugDrawEnabled  = false;
+	A_npcController::bDebugIdEnabled    = false;
+	A_npcController::bDebugGazeEnabled  = false;
 }
 
 void A_playerController::PlayerTick(float DeltaTime)
@@ -35,6 +36,8 @@ void A_playerController::PlayerTick(float DeltaTime)
 		TogglePopulationPanel();
 	if (WasInputKeyJustPressed(EKeys::Four))
 		ToggleRuntimePanel();
+	if (WasInputKeyJustPressed(EKeys::Five))
+		ToggleGazeDebug();
 }
 
 void A_playerController::TogglePopulationPanel()
@@ -75,4 +78,9 @@ void A_playerController::ToggleNpcDebugDraw()
 void A_playerController::ToggleNpcDebugId()
 {
 	A_npcController::bDebugIdEnabled = !A_npcController::bDebugIdEnabled;
+}
+
+void A_playerController::ToggleGazeDebug()
+{
+	A_npcController::bDebugGazeEnabled = !A_npcController::bDebugGazeEnabled;
 }

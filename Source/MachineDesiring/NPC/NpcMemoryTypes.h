@@ -58,6 +58,21 @@ enum class E_otherIDState : uint8
 
 
 // ----------------------------------------------------------------
+// E_gazeMode
+// Modalità sguardo attiva dell'NPC.
+// P1 Obstacle > P2 Peripheral > P3 Desired > None
+// ----------------------------------------------------------------
+UENUM(BlueprintType)
+enum class E_gazeMode : uint8
+{
+    None        UMETA(DisplayName = "None"),       // nessun target — blend verso forward neutro
+    Desired     UMETA(DisplayName = "Desired"),    // P3: primo in myDesiredRank in vista
+    Peripheral  UMETA(DisplayName = "Peripheral"), // P2: glance breve verso NPC/camera vicini
+    Obstacle    UMETA(DisplayName = "Obstacle"),   // P1: NPC/camera < 80cm — priorità assoluta
+};
+
+
+// ----------------------------------------------------------------
 // E_navMeshZoneType
 // Tipo di zona nel livello.
 // Usato da A_navMeshZone per distinguere zone Idle e Mating.

@@ -12,6 +12,8 @@ class U_overlaySubsystem;
 // Tasto 1: toggle debug sub-stati NPC
 // Tasto 2: toggle debug ID NPC
 // Tasto 3: toggle PopulationPanel overlay (statistiche)
+// Tasto 4: toggle RuntimePanel overlay
+// Tasto 5: toggle debug modalità sguardo NPC (gaze mode)
 // Da impostare come PlayerControllerClass nel GameMode.
 // ================================================================
 
@@ -29,6 +31,7 @@ private:
 	void ToggleRuntimePanel();
 	void ToggleNpcDebugDraw();
 	void ToggleNpcDebugId();
+	void ToggleGazeDebug();
 
 	U_overlaySubsystem* GetOverlaySub() const;
 };

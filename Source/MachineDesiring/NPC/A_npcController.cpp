@@ -40,8 +40,20 @@ static constexpr float IDLE_DURATION_MIN  = 10.f;
 static constexpr float IDLE_DURATION_MAX  = 55.f;
 static constexpr float IDLE_YAW_OFFSET    = 40.f;
 
+// ── Gaze ─────────────────────────────────────────────────────────
+static constexpr float GAZE_TICK_INTERVAL         = 0.5f;
+static constexpr float GAZE_OBSTACLE_ENTER_DIST   = 140.f;  // < 140cm → P1 Obstacle
+static constexpr float GAZE_OBSTACLE_EXIT_DIST    = 180.f;  // > 180cm → esce da P1
+static constexpr float GAZE_SCAN_DUR_BLACKLIST_MIN = 0.1f;  // blacklist → sguardo brevissimo
+static constexpr float GAZE_SCAN_DUR_BLACKLIST_MAX = 0.3f;
+static constexpr float GAZE_SCAN_DUR_MIN           = 0.2f;  // VisScore ≈ 0 → 0.2s
+static constexpr float GAZE_SCAN_DUR_MAX           = 3.0f;  // VisScore = 1.0 → 3.0s
+static constexpr float GAZE_SCAN_RADIUS            = 1500.f; // raggio prossimità 360° per gaze scan
+static constexpr float GAZE_REBUILD_INTERVAL       = 2.0f;  // rebuild lista ogni 2s
+
 bool A_npcController::bDebugDrawEnabled = false;
 bool A_npcController::bDebugIdEnabled   = false;
+bool A_npcController::bDebugGazeEnabled = false;
 
 // ================================================================
 // Costruttore
@@ -104,10 +116,21 @@ void A_npcController::OnPossess(APawn* InPawn)
 		&A_npcController::TickLostCheck, 300.f, true);
 	GetWorldTimerManager().SetTimer(myTimer_DebugDraw, this,
 		&A_npcController::TickDebugDraw, 0.2f, true);
+	GetWorldTimerManager().SetTimer(myTimer_GazeTick, this,
+		&A_npcController::TickGaze, GAZE_TICK_INTERVAL, true);
 
 	// Startup ritardato — tutte le zone hanno completato BeginPlay
 	GetWorldTimerManager().SetTimer(myTimer_InitialMovement, this,
 		&A_npcController::StartInitialMovement, 0.2f, false);
+
+	// Gaze scan — rebuild periodico indipendente da AIPerception
+	GetWorldTimerManager().SetTimer(myTimer_GazeRebuild, this,
+		&A_npcController::RebuildGazeScanList, GAZE_REBUILD_INTERVAL, true);
+
+	// Gaze/walk misalignment — check lento, resetta a 1.0 quando fermo
+	GetWorldTimerManager().SetTimer(myTimer_GazeWalkCheck, this,
+		&A_npcController::TickGazeWalkCheck, 1.0f, true);
+
 }
 
 void A_npcController::OnUnPossess()
@@ -118,6 +141,11 @@ void A_npcController::OnUnPossess()
 	GetWorldTimerManager().ClearTimer(myTimer_TargetWalkTick);
 	GetWorldTimerManager().ClearTimer(myTimer_MatingRetry);
 	GetWorldTimerManager().ClearTimer(myTimer_DebugDraw);
+	GetWorldTimerManager().ClearTimer(myTimer_GazeTick);
+	GetWorldTimerManager().ClearTimer(myTimer_GazeScan);
+	GetWorldTimerManager().ClearTimer(myTimer_GazeRebuild);
+	GetWorldTimerManager().ClearTimer(myTimer_GazeWalkCheck);
+	GetWorldTimerManager().ClearTimer(myTimer_ReleaseSignal);
 
 	myBrain        = nullptr;
 	myPawn         = nullptr;
@@ -137,11 +165,12 @@ void A_npcController::OnNearbyNPCsUpdated(const TArray<int32>& UpdatedIds)
 
 	for (int32 Id : UpdatedIds)
 	{
-		myNearbyNPCs.AddUnique(Id);
+		myNearbyNPCs.Add(Id);
 		ProcessPerceivedNpc(Id);
 	}
 
 	SortDesiredRank();
+	RebuildGazeScanList();
 }
 
 void A_npcController::OnNpcLostFromSight(int32 LostId)
@@ -149,6 +178,7 @@ void A_npcController::OnNpcLostFromSight(int32 LostId)
 	if (!myBrain) return;
 
 	myNearbyNPCs.Remove(LostId);
+	RebuildGazeScanList();
 
 	if (F_otherIDMemory* Rec = myBrain->mySocialMemory.Find(LostId))
 		Rec->myTLastSeen = GetWorld()->GetTimeSeconds();
@@ -204,6 +234,250 @@ void A_npcController::ProcessPerceivedNpc(int32 TargetId)
 	if (NewRec.state == E_otherIDState::Desired && myBrain->myDesiredRank.Num() < 20)
 		myBrain->myDesiredRank.Add(TargetId);
 }
+
+// ================================================================
+// SetGaze
+// Aggiorna mode/target e chiama BP solo se qualcosa è cambiato.
+// NewId: -1 = nessuno, -2 = player/camera, >= 0 = NPC ID.
+// ================================================================
+
+void A_npcController::SetGaze(E_gazeMode NewMode, int32 NewId, APawn* NewPawn)
+{
+    if (NewMode == myCurrentGazeMode && NewId == myGazeTargetId) return;
+
+    myCurrentGazeMode = NewMode;
+    myGazeTargetId    = NewId;
+
+    if (NewPawn)
+        BP_ExecuteGazeLookAt(NewPawn);
+    else
+        BP_ClearGaze();
+}
+
+
+// ================================================================
+// TickGaze — chiamato ogni 0.5s
+// Gestisce solo P1 (Obstacle): rileva NPC/player < 140cm e isteresi uscita.
+// Il ciclo di scansione (P2+P3) è gestito autonomamente da AdvanceGazeScan.
+// ================================================================
+
+void A_npcController::TickGaze()
+{
+    if (!myBrain || !myPawn) return;
+
+    // ── P1: isteresi uscita ───────────────────────────────────────
+    if (myCurrentGazeMode == E_gazeMode::Obstacle && myGazeTargetId != -1)
+    {
+        APawn* CurrentObstacle = nullptr;
+        if (myGazeTargetId == -2)
+        {
+            if (APlayerController* PC = GetWorld()->GetFirstPlayerController())
+                CurrentObstacle = PC->GetPawn();
+        }
+        else if (mySpawnManager)
+        {
+            if (U_npcBrainComponent* B = mySpawnManager->NpcById.FindRef(myGazeTargetId))
+                CurrentObstacle = Cast<APawn>(B->GetOwner());
+        }
+
+        if (CurrentObstacle)
+        {
+            const float Dist = FVector::Dist(myPawn->GetActorLocation(),
+                                             CurrentObstacle->GetActorLocation());
+            if (Dist <= myGazeObstacleExitDist) return; // ancora in isteresi
+        }
+        // Uscito da P1 — riprendi il ciclo di scansione
+        AdvanceGazeScan();
+        return;
+    }
+
+    // ── P1: detection ─────────────────────────────────────────────
+    // Solo NPC in myNearbyNPCs — O(nearby) invece di O(N).
+    // Check FOV frontale (dot > 0.5) previene rotazioni > 60° dal body forward.
+    const FVector MyForward = myPawn->GetActorForwardVector();
+    const FVector MyLoc     = myPawn->GetActorLocation();
+
+    if (mySpawnManager)
+    {
+        for (int32 NearId : myNearbyNPCs)
+        {
+            U_npcBrainComponent* B = mySpawnManager->NpcById.FindRef(NearId);
+            if (!B) continue;
+            APawn* P = Cast<APawn>(B->GetOwner());
+            if (!P) continue;
+
+            const FVector ToTarget = (P->GetActorLocation() - MyLoc);
+            if (ToTarget.SizeSquared() >= myGazeObstacleEnterDist * myGazeObstacleEnterDist) continue;
+            if (FVector::DotProduct(MyForward, ToTarget.GetSafeNormal()) <= 0.5f) continue;
+
+            SetGaze(E_gazeMode::Obstacle, NearId, P);
+            return;
+        }
+    }
+
+    // Check player come obstacle
+    if (APlayerController* PC = GetWorld()->GetFirstPlayerController())
+    {
+        if (APawn* PlayerPawn = PC->GetPawn())
+        {
+            const FVector ToPlayer = (PlayerPawn->GetActorLocation() - MyLoc);
+            if (ToPlayer.SizeSquared() < myGazeObstacleEnterDist * myGazeObstacleEnterDist
+                && FVector::DotProduct(MyForward, ToPlayer.GetSafeNormal()) > 0.5f)
+            {
+                SetGaze(E_gazeMode::Obstacle, -2, PlayerPawn);
+            }
+        }
+    }
+
+}
+
+
+// ================================================================
+// TickGazeWalkCheck — 1.0s loop
+// Aggiorna myGazeWalkDot solo se il pawn è in movimento.
+// Se fermo resetta a 1.0: evita il feedback loop che blocca il character.
+// ================================================================
+
+void A_npcController::TickGazeWalkCheck()
+{
+    if (!myBrain || !myPawn || !mySpawnManager || myGazeTargetId < 0)
+    {
+        myGazeWalkDot = 1.0f;
+        return;
+    }
+
+    // Se il pawn è fermo resetta — il Blueprint potrà far ripartire il movimento
+    const FVector Velocity2D = FVector(myPawn->GetVelocity().X, myPawn->GetVelocity().Y, 0.f);
+    if (Velocity2D.SizeSquared() < 50.f * 50.f)
+    {
+        myGazeWalkDot = 1.0f;
+        return;
+    }
+
+    FVector GazeDir = FVector::ZeroVector;
+    if (U_npcBrainComponent* B = mySpawnManager->NpcById.FindRef(myGazeTargetId))
+        if (APawn* P = Cast<APawn>(B->GetOwner()))
+            GazeDir = (P->GetActorLocation() - myPawn->GetActorLocation()).GetSafeNormal2D();
+
+    if (GazeDir.IsNearlyZero())
+    {
+        myGazeWalkDot = 1.0f;
+        return;
+    }
+
+    myGazeWalkDot = FVector::DotProduct(GazeDir, Velocity2D.GetSafeNormal());
+}
+
+
+// ================================================================
+// GazeDurationForId
+// Blacklist → 0.1–0.3s (sguardo brevissimo).
+// Tutti gli altri → lerp lineare VisScore [0,1] → [0.2s, 3.0s].
+// ================================================================
+
+float A_npcController::GazeDurationForId(int32 Id) const
+{
+    if (!myBrain || !mySubsystem) return GAZE_SCAN_DUR_MIN;
+
+    if (myBrain->myStaticVisBlacklist.Contains(Id))
+        return FMath::FRandRange(GAZE_SCAN_DUR_BLACKLIST_MIN, GAZE_SCAN_DUR_BLACKLIST_MAX);
+
+    const float Score = mySubsystem->GetVisScore(myBrain->myId, Id);
+    return FMath::Lerp(GAZE_SCAN_DUR_MIN, GAZE_SCAN_DUR_MAX, FMath::Clamp(Score, 0.f, 1.f));
+}
+
+
+// ================================================================
+// RebuildGazeScanList
+// Ricostruisce la lista di scansione da myNearbyNPCs, ordinata per
+// VisScore desc. Chiamata ad ogni cambio di myNearbyNPCs.
+// Avvia AdvanceGazeScan se il ciclo non è già attivo.
+// ================================================================
+
+void A_npcController::RebuildGazeScanList()
+{
+    if (!myBrain || !mySubsystem || !myPawn || !mySpawnManager) return;
+
+    myGazeScanList.Reset();
+
+    const FVector MyLoc = myPawn->GetActorLocation();
+    const float RadiusSq = GAZE_SCAN_RADIUS * GAZE_SCAN_RADIUS;
+
+    // Scansione 360° per prossimità fisica — indipendente dal cono AIPerception
+    for (auto& Pair : mySpawnManager->NpcById)
+    {
+        if (Pair.Key == myBrain->myId) continue;
+        U_npcBrainComponent* B = Pair.Value;
+        if (!B) continue;
+        APawn* P = Cast<APawn>(B->GetOwner());
+        if (!P) continue;
+
+        if (FVector::DistSquared(MyLoc, P->GetActorLocation()) > RadiusSq) continue;
+
+        myGazeScanList.Add(Pair.Key);
+    }
+
+    // Ordina per VisScore decrescente — più desiderati scansionati per primi
+    myGazeScanList.Sort([this](int32 A, int32 B)
+    {
+        return mySubsystem->GetVisScore(myBrain->myId, A)
+             > mySubsystem->GetVisScore(myBrain->myId, B);
+    });
+
+    // Normalizza l'indice dopo il rebuild — evita out-of-bounds
+    if (myGazeScanList.Num() > 0)
+        myGazeScanIndex = FMath::Clamp(myGazeScanIndex, 0, myGazeScanList.Num() - 1);
+    else
+        myGazeScanIndex = 0;
+
+    // Avvia il ciclo se non è già attivo e non siamo in P1
+    if (!GetWorldTimerManager().IsTimerActive(myTimer_GazeScan)
+        && myCurrentGazeMode != E_gazeMode::Obstacle)
+    {
+        AdvanceGazeScan();
+    }
+}
+
+
+// ================================================================
+// AdvanceGazeScan
+// Avanza al prossimo NPC nel ciclo di scansione (round-robin),
+// applica SetGaze e schedula il timer per la durata calcolata.
+// P1 attivo → return immediato (il ciclo riprende all'uscita da P1).
+// ================================================================
+
+void A_npcController::AdvanceGazeScan()
+{
+    if (!myBrain || !mySpawnManager) return;
+    if (myCurrentGazeMode == E_gazeMode::Obstacle) return;
+
+    if (myGazeScanList.Num() == 0)
+    {
+        SetGaze(E_gazeMode::None, -1, nullptr);
+        return;
+    }
+
+    // Avanza — wrapping circolare
+    myGazeScanIndex = (myGazeScanIndex + 1) % myGazeScanList.Num();
+    const int32 TargetId = myGazeScanList[myGazeScanIndex];
+
+    U_npcBrainComponent* B = mySpawnManager->NpcById.FindRef(TargetId);
+    APawn* P = B ? Cast<APawn>(B->GetOwner()) : nullptr;
+
+    if (P)
+    {
+        const E_gazeMode Mode = myBrain->myDesiredRank.Contains(TargetId)
+                              ? E_gazeMode::Desired : E_gazeMode::Peripheral;
+        SetGaze(Mode, TargetId, P);
+    }
+
+    const float Duration = GazeDurationForId(TargetId);
+    GetWorldTimerManager().SetTimer(myTimer_GazeScan,
+        FTimerDelegate::CreateWeakLambda(this, [this]() { AdvanceGazeScan(); }),
+        Duration, false);
+}
+
+
 
 // ================================================================
 // Movimento — startup e scelta substate
@@ -570,9 +844,8 @@ bool A_npcController::TrySignaling(int32 TargetId, U_npcBrainComponent* TargetBr
 
 	ExchangeSignals(TargetId);
 
-	FTimerHandle ReleaseTimer;
-	GetWorldTimerManager().SetTimer(ReleaseTimer,
-		FTimerDelegate::CreateUObject(this, &A_npcController::ReleaseSignalLock),
+	GetWorldTimerManager().SetTimer(myTimer_ReleaseSignal,
+		FTimerDelegate::CreateWeakLambda(this, [this]() { ReleaseSignalLock(); }),
 		SIGNAL_ACTIVE_DURATION, false);
 
 	return true;
@@ -849,13 +1122,14 @@ void A_npcController::SortDesiredRank()
 	});
 }
 
+
 // ================================================================
 // Debug
 // ================================================================
 
 void A_npcController::TickDebugDraw()
 {
-	if (!bDebugDrawEnabled && !bDebugIdEnabled) return;
+	if (!bDebugDrawEnabled && !bDebugIdEnabled && !bDebugGazeEnabled) return;
 	if (!myBrain || !myPawn) return;
 
 	if (bDebugIdEnabled)
@@ -899,5 +1173,41 @@ void A_npcController::TickDebugDraw()
 		DrawDebugString(GetWorld(),
 			myPawn->GetActorLocation() + FVector(0, 0, 100),
 			SubLabel, nullptr, StateColor, 0.25f);
+	}
+
+	if (bDebugGazeEnabled)
+	{
+		FColor GazeColor = FColor::Silver;
+		FString GazeLabel = FString::Printf(TEXT("GAZE: — [%d]"), myGazeScanList.Num());
+
+		switch (myCurrentGazeMode)
+		{
+		case E_gazeMode::Obstacle:
+		{
+			GazeColor = FColor::Orange;
+			const FString IdStr = (myGazeTargetId == -2)
+				? TEXT("cam") : FString::FromInt(myGazeTargetId);
+			GazeLabel = FString::Printf(TEXT("GAZE: obstacle [%s] near=%d"),
+				*IdStr, myGazeScanList.Num());
+			break;
+		}
+		case E_gazeMode::Peripheral:
+			GazeColor = FColor::Cyan;
+			GazeLabel = FString::Printf(TEXT("GAZE: scan [%d] near=%d"),
+				myGazeTargetId, myGazeScanList.Num());
+			break;
+		case E_gazeMode::Desired:
+			GazeColor = FColor::Green;
+			GazeLabel = FString::Printf(TEXT("GAZE: desired [%d] near=%d"),
+				myGazeTargetId, myGazeScanList.Num());
+			break;
+		case E_gazeMode::None:
+		default:
+			break;
+		}
+
+		DrawDebugString(GetWorld(),
+			myPawn->GetActorLocation() + FVector(0, 0, 80),
+			GazeLabel, nullptr, GazeColor, 0.25f);
 	}
 }
