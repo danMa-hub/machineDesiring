@@ -9,10 +9,11 @@
 
 ### APERTURA (esegui in ordine)
 
-1. Leggi `.claude/session_log.md` — mostra all'utente l'ultima voce (data + cosa è stato fatto)
-2. Esegui i check di setup (sezione SETUP qui sotto) — segnala solo se manca qualcosa
-3. Mostra git status sintetico (branch, file modificati non committati)
-4. Chiedi: **"Cosa lavori oggi?"** e attendi risposta prima di procedere
+1. Leggi `.claude/out_of_credits_log.md` — se ci sono voci con stato **PENDING**, mostrale subito e chiedì come procedere PRIMA di fare altro
+2. Leggi `.claude/session_log.md` — mostra all'utente l'ultima voce (data + cosa è stato fatto)
+3. Esegui i check di setup (sezione SETUP qui sotto) — segnala solo se manca qualcosa
+4. Mostra git status sintetico (branch, file modificati non committati)
+5. Chiedi: **"Cosa lavori oggi?"** e attendi risposta prima di procedere
 
 ### CHIUSURA (quando l'utente dice "chiudo" / "fine sessione" / "ci vediamo")
 
