@@ -3,6 +3,41 @@
 
 ---
 
+## PROTOCOLLO SESSIONE — esegui SEMPRE e SUBITO all'apertura
+
+**Questo blocco va eseguito automaticamente a ogni nuova conversazione, senza aspettare istruzioni.**
+
+### APERTURA (esegui in ordine)
+
+1. Leggi `.claude/session_log.md` — mostra all'utente l'ultima voce (data + cosa è stato fatto)
+2. Esegui i check di setup (sezione SETUP qui sotto) — segnala solo se manca qualcosa
+3. Mostra git status sintetico (branch, file modificati non committati)
+4. Chiedi: **"Cosa lavori oggi?"** e attendi risposta prima di procedere
+
+### CHIUSURA (quando l'utente dice "chiudo" / "fine sessione" / "ci vediamo")
+
+1. Chiedi: **"Descrivi i file su cui hai lavorato oggi — anche quelli fuori dal repo (Blender, Houdini, UE5, ecc.)."**
+2. Per ogni file descritto dall'utente, fornisci:
+   - Nome file corretto secondo naming convention del progetto
+   - Cartella di destinazione nel repo
+   - Breve descrizione da mettere nel README.md della cartella
+3. Aggiorna `.claude/session_log.md` con la voce della sessione appena chiusa
+4. Proponi il commit con tutti i file nuovi/modificati
+
+### Formato voce session_log.md
+
+```
+## YYYY-MM-DD
+
+**Obiettivo:** [cosa si voleva fare]
+**Fatto:** [lista puntata di implementazioni completate]
+**File archiviati:** [nome → percorso]
+**Prossimo:** [primo step da fare alla sessione successiva]
+**Stato roadmap:** [ID task aggiornati]
+```
+
+---
+
 ## SETUP — esegui a ogni apertura
 
 ### 1. Struttura cartelle (esegui solo se mancano)
