@@ -1,10 +1,13 @@
-# Unreal Engine
-Binaries/
-DerivedDataCache/
-Intermediate/
-Saved/
-Build/
-.vs/
+# ── Unreal Engine — generati dal build ───────────────────────
+MachineDesiringUnreal/Binaries/
+MachineDesiringUnreal/DerivedDataCache/
+MachineDesiringUnreal/Intermediate/
+MachineDesiringUnreal/Saved/
+MachineDesiringUnreal/Build/
+
+# ── Visual Studio / IDE ───────────────────────────────────────
+MachineDesiringUnreal/.vs/
+MachineDesiringUnreal/.vscode/compileCommands_*/
 *.VC.db
 *.opensdf
 *.opendb
@@ -13,23 +16,55 @@ Build/
 *.xcodeproj
 *.xcworkspace
 
-# Compilati
+# ── Compilati ────────────────────────────────────────────────
 *.pdb
 *.ilk
 *.exp
 *.lib
 
-# Asset binari UE (troppo grandi per git)
-Content/
+# ── Content: escludi tutto tranne i BP_ dell'utente ──────────
+MachineDesiringUnreal/Content/*
 
-# File zip e backup
+# NPC (BP_ diretti nella root della cartella)
+!MachineDesiringUnreal/Content/NPC/
+MachineDesiringUnreal/Content/NPC/*
+!MachineDesiringUnreal/Content/NPC/BP_NPC_AIController.uasset
+!MachineDesiringUnreal/Content/NPC/BP_NPC_Character.uasset
+!MachineDesiringUnreal/Content/NPC/BP_SpawnManager.uasset
+!MachineDesiringUnreal/Content/NPC/BP_GameMode.uasset
+!MachineDesiringUnreal/Content/NPC/BP_ThirdPersonCharacternpc.uasset
+
+# Overlay (widget piccoli — 0.08 MB totali)
+!MachineDesiringUnreal/Content/Overlay/
+
+# Maps
+!MachineDesiringUnreal/Content/Maps/
+MachineDesiringUnreal/Content/Maps/*
+!MachineDesiringUnreal/Content/Maps/BP_NavZone.uasset
+
+# Levels
+!MachineDesiringUnreal/Content/Levels/
+MachineDesiringUnreal/Content/Levels/*
+!MachineDesiringUnreal/Content/Levels/LevelPrototyping/
+MachineDesiringUnreal/Content/Levels/LevelPrototyping/*
+!MachineDesiringUnreal/Content/Levels/LevelPrototyping/BP_myWalkDestination.uasset
+
+# Blueprints (BP_myAIController — naming convention tua)
+!MachineDesiringUnreal/Content/Blueprints/
+MachineDesiringUnreal/Content/Blueprints/*
+!MachineDesiringUnreal/Content/Blueprints/BP_myAIController.uasset
+
+# ── Backup e archivi ─────────────────────────────────────────
 *.zip
-Backup_preSpec/
-MachineDesiring_session_2026-03-20/
-MacchinaBaseDev/
-updated/
+MachineDesiringUnreal/_backup/
 
-# File temporanei e OS
+# ── Assets pesanti (Blender, 3D) ─────────────────────────────
+*.blend
+*.blend1
+assetsxBlender/
+*.lnk
+
+# ── File temporanei e OS ──────────────────────────────────────
 Thumbs.db
 .DS_Store
 *.tmp

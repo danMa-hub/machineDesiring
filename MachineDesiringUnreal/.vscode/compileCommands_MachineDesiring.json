@@ -1,0 +1,258 @@
+[
+	{
+		"file": "D:\\THEGUTS\\theGutsUnreal\\MachineDesiring\\MachineDesiring\\Source\\MachineDesiring\\MachineDesiring.Build.cs",
+		"arguments": [
+			"C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\cl.exe",
+			"@D:\\THEGUTS\\theGutsUnreal\\MachineDesiring\\MachineDesiring\\.vscode\\compileCommands_MachineDesiring\\MachineDesiring.1.rsp"
+		],
+		"directory": "C:\\Program Files\\Epic Games\\UE_5.7\\Engine\\Source"
+	},
+	{
+		"file": "D:\\THEGUTS\\theGutsUnreal\\MachineDesiring\\MachineDesiring\\Source\\MachineDesiring\\MachineDesiring.cpp",
+		"arguments": [
+			"C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\cl.exe",
+			"@D:\\THEGUTS\\theGutsUnreal\\MachineDesiring\\MachineDesiring\\.vscode\\compileCommands_MachineDesiring\\MachineDesiring.1.rsp"
+		],
+		"directory": "C:\\Program Files\\Epic Games\\UE_5.7\\Engine\\Source"
+	},
+	{
+		"file": "D:\\THEGUTS\\theGutsUnreal\\MachineDesiring\\MachineDesiring\\Source\\MachineDesiring\\MachineDesiring.h",
+		"arguments": [
+			"C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\cl.exe",
+			"@D:\\THEGUTS\\theGutsUnreal\\MachineDesiring\\MachineDesiring\\.vscode\\compileCommands_MachineDesiring\\MachineDesiring.1.rsp"
+		],
+		"directory": "C:\\Program Files\\Epic Games\\UE_5.7\\Engine\\Source"
+	},
+	{
+		"file": "D:\\THEGUTS\\theGutsUnreal\\MachineDesiring\\MachineDesiring\\Source\\MachineDesiring\\NPC\\A_navMeshZone.cpp",
+		"arguments": [
+			"C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\cl.exe",
+			"@D:\\THEGUTS\\theGutsUnreal\\MachineDesiring\\MachineDesiring\\.vscode\\compileCommands_MachineDesiring\\MachineDesiring.1.rsp"
+		],
+		"directory": "C:\\Program Files\\Epic Games\\UE_5.7\\Engine\\Source"
+	},
+	{
+		"file": "D:\\THEGUTS\\theGutsUnreal\\MachineDesiring\\MachineDesiring\\Source\\MachineDesiring\\NPC\\A_navMeshZone.h",
+		"arguments": [
+			"C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\cl.exe",
+			"@D:\\THEGUTS\\theGutsUnreal\\MachineDesiring\\MachineDesiring\\.vscode\\compileCommands_MachineDesiring\\MachineDesiring.1.rsp"
+		],
+		"directory": "C:\\Program Files\\Epic Games\\UE_5.7\\Engine\\Source"
+	},
+	{
+		"file": "D:\\THEGUTS\\theGutsUnreal\\MachineDesiring\\MachineDesiring\\Source\\MachineDesiring\\NPC\\A_npcCharacter.cpp",
+		"arguments": [
+			"C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\cl.exe",
+			"@D:\\THEGUTS\\theGutsUnreal\\MachineDesiring\\MachineDesiring\\.vscode\\compileCommands_MachineDesiring\\MachineDesiring.1.rsp"
+		],
+		"directory": "C:\\Program Files\\Epic Games\\UE_5.7\\Engine\\Source"
+	},
+	{
+		"file": "D:\\THEGUTS\\theGutsUnreal\\MachineDesiring\\MachineDesiring\\Source\\MachineDesiring\\NPC\\A_npcCharacter.h",
+		"arguments": [
+			"C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\cl.exe",
+			"@D:\\THEGUTS\\theGutsUnreal\\MachineDesiring\\MachineDesiring\\.vscode\\compileCommands_MachineDesiring\\MachineDesiring.1.rsp"
+		],
+		"directory": "C:\\Program Files\\Epic Games\\UE_5.7\\Engine\\Source"
+	},
+	{
+		"file": "D:\\THEGUTS\\theGutsUnreal\\MachineDesiring\\MachineDesiring\\Source\\MachineDesiring\\NPC\\A_npcController.cpp",
+		"arguments": [
+			"C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\cl.exe",
+			"@D:\\THEGUTS\\theGutsUnreal\\MachineDesiring\\MachineDesiring\\.vscode\\compileCommands_MachineDesiring\\MachineDesiring.1.rsp"
+		],
+		"directory": "C:\\Program Files\\Epic Games\\UE_5.7\\Engine\\Source"
+	},
+	{
+		"file": "D:\\THEGUTS\\theGutsUnreal\\MachineDesiring\\MachineDesiring\\Source\\MachineDesiring\\NPC\\A_npcController.h",
+		"arguments": [
+			"C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\cl.exe",
+			"@D:\\THEGUTS\\theGutsUnreal\\MachineDesiring\\MachineDesiring\\.vscode\\compileCommands_MachineDesiring\\MachineDesiring.1.rsp"
+		],
+		"directory": "C:\\Program Files\\Epic Games\\UE_5.7\\Engine\\Source"
+	},
+	{
+		"file": "D:\\THEGUTS\\theGutsUnreal\\MachineDesiring\\MachineDesiring\\Source\\MachineDesiring\\NPC\\A_playerController.cpp",
+		"arguments": [
+			"C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\cl.exe",
+			"@D:\\THEGUTS\\theGutsUnreal\\MachineDesiring\\MachineDesiring\\.vscode\\compileCommands_MachineDesiring\\MachineDesiring.1.rsp"
+		],
+		"directory": "C:\\Program Files\\Epic Games\\UE_5.7\\Engine\\Source"
+	},
+	{
+		"file": "D:\\THEGUTS\\theGutsUnreal\\MachineDesiring\\MachineDesiring\\Source\\MachineDesiring\\NPC\\A_playerController.h",
+		"arguments": [
+			"C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\cl.exe",
+			"@D:\\THEGUTS\\theGutsUnreal\\MachineDesiring\\MachineDesiring\\.vscode\\compileCommands_MachineDesiring\\MachineDesiring.1.rsp"
+		],
+		"directory": "C:\\Program Files\\Epic Games\\UE_5.7\\Engine\\Source"
+	},
+	{
+		"file": "D:\\THEGUTS\\theGutsUnreal\\MachineDesiring\\MachineDesiring\\Source\\MachineDesiring\\NPC\\A_spawnManager.cpp",
+		"arguments": [
+			"C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\cl.exe",
+			"@D:\\THEGUTS\\theGutsUnreal\\MachineDesiring\\MachineDesiring\\.vscode\\compileCommands_MachineDesiring\\MachineDesiring.1.rsp"
+		],
+		"directory": "C:\\Program Files\\Epic Games\\UE_5.7\\Engine\\Source"
+	},
+	{
+		"file": "D:\\THEGUTS\\theGutsUnreal\\MachineDesiring\\MachineDesiring\\Source\\MachineDesiring\\NPC\\A_spawnManager.h",
+		"arguments": [
+			"C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\cl.exe",
+			"@D:\\THEGUTS\\theGutsUnreal\\MachineDesiring\\MachineDesiring\\.vscode\\compileCommands_MachineDesiring\\MachineDesiring.1.rsp"
+		],
+		"directory": "C:\\Program Files\\Epic Games\\UE_5.7\\Engine\\Source"
+	},
+	{
+		"file": "D:\\THEGUTS\\theGutsUnreal\\MachineDesiring\\MachineDesiring\\Source\\MachineDesiring\\NPC\\NpcMemoryTypes.h",
+		"arguments": [
+			"C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\cl.exe",
+			"@D:\\THEGUTS\\theGutsUnreal\\MachineDesiring\\MachineDesiring\\.vscode\\compileCommands_MachineDesiring\\MachineDesiring.1.rsp"
+		],
+		"directory": "C:\\Program Files\\Epic Games\\UE_5.7\\Engine\\Source"
+	},
+	{
+		"file": "D:\\THEGUTS\\theGutsUnreal\\MachineDesiring\\MachineDesiring\\Source\\MachineDesiring\\Overlay\\UW_mainOverlay.cpp",
+		"arguments": [
+			"C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\cl.exe",
+			"@D:\\THEGUTS\\theGutsUnreal\\MachineDesiring\\MachineDesiring\\.vscode\\compileCommands_MachineDesiring\\MachineDesiring.1.rsp"
+		],
+		"directory": "C:\\Program Files\\Epic Games\\UE_5.7\\Engine\\Source"
+	},
+	{
+		"file": "D:\\THEGUTS\\theGutsUnreal\\MachineDesiring\\MachineDesiring\\Source\\MachineDesiring\\Overlay\\UW_mainOverlay.h",
+		"arguments": [
+			"C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\cl.exe",
+			"@D:\\THEGUTS\\theGutsUnreal\\MachineDesiring\\MachineDesiring\\.vscode\\compileCommands_MachineDesiring\\MachineDesiring.1.rsp"
+		],
+		"directory": "C:\\Program Files\\Epic Games\\UE_5.7\\Engine\\Source"
+	},
+	{
+		"file": "D:\\THEGUTS\\theGutsUnreal\\MachineDesiring\\MachineDesiring\\Source\\MachineDesiring\\Overlay\\UW_npcInspector.cpp",
+		"arguments": [
+			"C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\cl.exe",
+			"@D:\\THEGUTS\\theGutsUnreal\\MachineDesiring\\MachineDesiring\\.vscode\\compileCommands_MachineDesiring\\MachineDesiring.1.rsp"
+		],
+		"directory": "C:\\Program Files\\Epic Games\\UE_5.7\\Engine\\Source"
+	},
+	{
+		"file": "D:\\THEGUTS\\theGutsUnreal\\MachineDesiring\\MachineDesiring\\Source\\MachineDesiring\\Overlay\\UW_npcInspector.h",
+		"arguments": [
+			"C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\cl.exe",
+			"@D:\\THEGUTS\\theGutsUnreal\\MachineDesiring\\MachineDesiring\\.vscode\\compileCommands_MachineDesiring\\MachineDesiring.1.rsp"
+		],
+		"directory": "C:\\Program Files\\Epic Games\\UE_5.7\\Engine\\Source"
+	},
+	{
+		"file": "D:\\THEGUTS\\theGutsUnreal\\MachineDesiring\\MachineDesiring\\Source\\MachineDesiring\\Overlay\\UW_populationPanel.cpp",
+		"arguments": [
+			"C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\cl.exe",
+			"@D:\\THEGUTS\\theGutsUnreal\\MachineDesiring\\MachineDesiring\\.vscode\\compileCommands_MachineDesiring\\MachineDesiring.1.rsp"
+		],
+		"directory": "C:\\Program Files\\Epic Games\\UE_5.7\\Engine\\Source"
+	},
+	{
+		"file": "D:\\THEGUTS\\theGutsUnreal\\MachineDesiring\\MachineDesiring\\Source\\MachineDesiring\\Overlay\\UW_populationPanel.h",
+		"arguments": [
+			"C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\cl.exe",
+			"@D:\\THEGUTS\\theGutsUnreal\\MachineDesiring\\MachineDesiring\\.vscode\\compileCommands_MachineDesiring\\MachineDesiring.1.rsp"
+		],
+		"directory": "C:\\Program Files\\Epic Games\\UE_5.7\\Engine\\Source"
+	},
+	{
+		"file": "D:\\THEGUTS\\theGutsUnreal\\MachineDesiring\\MachineDesiring\\Source\\MachineDesiring\\Overlay\\UW_runtimePanel.cpp",
+		"arguments": [
+			"C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\cl.exe",
+			"@D:\\THEGUTS\\theGutsUnreal\\MachineDesiring\\MachineDesiring\\.vscode\\compileCommands_MachineDesiring\\MachineDesiring.1.rsp"
+		],
+		"directory": "C:\\Program Files\\Epic Games\\UE_5.7\\Engine\\Source"
+	},
+	{
+		"file": "D:\\THEGUTS\\theGutsUnreal\\MachineDesiring\\MachineDesiring\\Source\\MachineDesiring\\Overlay\\UW_runtimePanel.h",
+		"arguments": [
+			"C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\cl.exe",
+			"@D:\\THEGUTS\\theGutsUnreal\\MachineDesiring\\MachineDesiring\\.vscode\\compileCommands_MachineDesiring\\MachineDesiring.1.rsp"
+		],
+		"directory": "C:\\Program Files\\Epic Games\\UE_5.7\\Engine\\Source"
+	},
+	{
+		"file": "D:\\THEGUTS\\theGutsUnreal\\MachineDesiring\\MachineDesiring\\Source\\MachineDesiring\\Overlay\\UW_signalEvent.cpp",
+		"arguments": [
+			"C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\cl.exe",
+			"@D:\\THEGUTS\\theGutsUnreal\\MachineDesiring\\MachineDesiring\\.vscode\\compileCommands_MachineDesiring\\MachineDesiring.1.rsp"
+		],
+		"directory": "C:\\Program Files\\Epic Games\\UE_5.7\\Engine\\Source"
+	},
+	{
+		"file": "D:\\THEGUTS\\theGutsUnreal\\MachineDesiring\\MachineDesiring\\Source\\MachineDesiring\\Overlay\\UW_signalEvent.h",
+		"arguments": [
+			"C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\cl.exe",
+			"@D:\\THEGUTS\\theGutsUnreal\\MachineDesiring\\MachineDesiring\\.vscode\\compileCommands_MachineDesiring\\MachineDesiring.1.rsp"
+		],
+		"directory": "C:\\Program Files\\Epic Games\\UE_5.7\\Engine\\Source"
+	},
+	{
+		"file": "D:\\THEGUTS\\theGutsUnreal\\MachineDesiring\\MachineDesiring\\Source\\MachineDesiring\\Overlay\\UW_statBar.cpp",
+		"arguments": [
+			"C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\cl.exe",
+			"@D:\\THEGUTS\\theGutsUnreal\\MachineDesiring\\MachineDesiring\\.vscode\\compileCommands_MachineDesiring\\MachineDesiring.1.rsp"
+		],
+		"directory": "C:\\Program Files\\Epic Games\\UE_5.7\\Engine\\Source"
+	},
+	{
+		"file": "D:\\THEGUTS\\theGutsUnreal\\MachineDesiring\\MachineDesiring\\Source\\MachineDesiring\\Overlay\\UW_statBar.h",
+		"arguments": [
+			"C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\cl.exe",
+			"@D:\\THEGUTS\\theGutsUnreal\\MachineDesiring\\MachineDesiring\\.vscode\\compileCommands_MachineDesiring\\MachineDesiring.1.rsp"
+		],
+		"directory": "C:\\Program Files\\Epic Games\\UE_5.7\\Engine\\Source"
+	},
+	{
+		"file": "D:\\THEGUTS\\theGutsUnreal\\MachineDesiring\\MachineDesiring\\Source\\MachineDesiring\\Overlay\\U_overlaySubsystem.cpp",
+		"arguments": [
+			"C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\cl.exe",
+			"@D:\\THEGUTS\\theGutsUnreal\\MachineDesiring\\MachineDesiring\\.vscode\\compileCommands_MachineDesiring\\MachineDesiring.1.rsp"
+		],
+		"directory": "C:\\Program Files\\Epic Games\\UE_5.7\\Engine\\Source"
+	},
+	{
+		"file": "D:\\THEGUTS\\theGutsUnreal\\MachineDesiring\\MachineDesiring\\Source\\MachineDesiring\\Overlay\\U_overlaySubsystem.h",
+		"arguments": [
+			"C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\cl.exe",
+			"@D:\\THEGUTS\\theGutsUnreal\\MachineDesiring\\MachineDesiring\\.vscode\\compileCommands_MachineDesiring\\MachineDesiring.1.rsp"
+		],
+		"directory": "C:\\Program Files\\Epic Games\\UE_5.7\\Engine\\Source"
+	},
+	{
+		"file": "D:\\THEGUTS\\theGutsUnreal\\MachineDesiring\\MachineDesiring\\Source\\MachineDesiring\\Population\\F_npcProfile.cpp",
+		"arguments": [
+			"C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\cl.exe",
+			"@D:\\THEGUTS\\theGutsUnreal\\MachineDesiring\\MachineDesiring\\.vscode\\compileCommands_MachineDesiring\\MachineDesiring.1.rsp"
+		],
+		"directory": "C:\\Program Files\\Epic Games\\UE_5.7\\Engine\\Source"
+	},
+	{
+		"file": "D:\\THEGUTS\\theGutsUnreal\\MachineDesiring\\MachineDesiring\\Source\\MachineDesiring\\Population\\F_npcProfile.h",
+		"arguments": [
+			"C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\cl.exe",
+			"@D:\\THEGUTS\\theGutsUnreal\\MachineDesiring\\MachineDesiring\\.vscode\\compileCommands_MachineDesiring\\MachineDesiring.1.rsp"
+		],
+		"directory": "C:\\Program Files\\Epic Games\\UE_5.7\\Engine\\Source"
+	},
+	{
+		"file": "D:\\THEGUTS\\theGutsUnreal\\MachineDesiring\\MachineDesiring\\Source\\MachineDesiring\\Population\\U_populationSubsystem.cpp",
+		"arguments": [
+			"C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\cl.exe",
+			"@D:\\THEGUTS\\theGutsUnreal\\MachineDesiring\\MachineDesiring\\.vscode\\compileCommands_MachineDesiring\\MachineDesiring.1.rsp"
+		],
+		"directory": "C:\\Program Files\\Epic Games\\UE_5.7\\Engine\\Source"
+	},
+	{
+		"file": "D:\\THEGUTS\\theGutsUnreal\\MachineDesiring\\MachineDesiring\\Source\\MachineDesiring\\Population\\U_populationSubsystem.h",
+		"arguments": [
+			"C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\cl.exe",
+			"@D:\\THEGUTS\\theGutsUnreal\\MachineDesiring\\MachineDesiring\\.vscode\\compileCommands_MachineDesiring\\MachineDesiring.1.rsp"
+		],
+		"directory": "C:\\Program Files\\Epic Games\\UE_5.7\\Engine\\Source"
+	}
+]
