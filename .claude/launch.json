@@ -1,0 +1,32 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "Macchina del Desiderio — simulazione Python (modalità: both)",
+      "runtimeExecutable": "python",
+      "runtimeArgs": [
+        "MacchinaBaseDev/macchina_base_v2_4.py",
+        "--mode", "both"
+      ],
+      "port": null
+    },
+    {
+      "name": "Macchina del Desiderio — solo cruising",
+      "runtimeExecutable": "python",
+      "runtimeArgs": [
+        "MacchinaBaseDev/macchina_base_v2_4.py",
+        "--mode", "cruising"
+      ],
+      "port": null
+    },
+    {
+      "name": "Macchina del Desiderio — solo app",
+      "runtimeExecutable": "python",
+      "runtimeArgs": [
+        "MacchinaBaseDev/macchina_base_v2_4.py",
+        "--mode", "app"
+      ],
+      "port": null
+    }
+  ]
+}

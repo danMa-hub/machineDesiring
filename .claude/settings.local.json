@@ -1,0 +1,34 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(\"/c/Program Files/Epic Games/UE_5.7/Engine/Build/BatchFiles/Build.bat\" MachineDesiring Win64 Development \"D:/THEGUTS/theGutsUnreal/MachineDesiring/MachineDesiring/MachineDesiring.uproject\" -waitmutex)",
+      "Bash(grep -E \"\\\\.\\(bat|sln|uproject\\)$\")",
+      "Bash(python -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(d.get\\(''''EngineAssociation'''',''''''''\\)\\)\")",
+      "Bash(reg query:*)",
+      "Bash(\"C:/Program Files/Epic Games/UE_5.7/Engine/Binaries/DotNET/UnrealBuildTool/UnrealBuildTool.exe\" MachineDesiringEditor Win64 Development -Project=\"D:/THEGUTS/theGutsUnreal/MachineDesiring/MachineDesiring/MachineDesiring.uproject\" -WaitMutex)",
+      "Skill(update-config)",
+      "Skill(update-config:*)",
+      "Bash(python \"C:/Users/dan-fisso/.claude/statusline.py\")",
+      "Bash(python \"C:/Users/dan-fisso/.claude/statusline.py\" 2)",
+      "Bash(1:*)",
+      "Bash(claude --version)",
+      "Read(//c/Program Files/Epic Games/**)",
+      "Read(//d/Program Files/**)",
+      "Read(//c//**)",
+      "Bash(\"C:/Program Files/Epic Games/UE_5.7/Engine/Build/BatchFiles/Build.bat\" MachineDesiringEditor Win64 Development -Project=\"D:/THEGUTS/theGutsUnreal/MachineDesiring/MachineDesiring/MachineDesiring.uproject\" -WaitMutex)",
+      "Read(//d/THEGUTS/theGutsUnreal/MachineDesiring/**)",
+      "Bash(\"C:/Program Files/Epic Games/UE_5.5/Engine/Build/BatchFiles/Build.bat\" MachineDesiringEditor Win64 Development -Project=\"D:/THEGUTS/theGutsUnreal/MachineDesiring/MachineDesiring/MachineDesiring.uproject\" -WaitMutex)",
+      "Bash(\"C:/Program Files/Epic Games/UE_5.4/Engine/Build/BatchFiles/Build.bat\" MachineDesiringEditor Win64 Development -Project=\"D:/THEGUTS/theGutsUnreal/MachineDesiring/MachineDesiring/MachineDesiring.uproject\" -WaitMutex)",
+      "Bash(\"/c/Program Files/Epic Games/UE_5.7/Engine/Build/BatchFiles/Build.bat\" MachineDesiringEditor Win64 Development -Project=\"D:/THEGUTS/theGutsUnreal/MachineDesiring/MachineDesiring/MachineDesiring.uproject\" -WaitMutex)",
+      "Bash(\"C:/Program Files/Epic Games/UE_5.5/Engine/Build/BatchFiles/Build.bat\" MachineDesiringEditor Win64 Development -Project=\"D:/THEGUTS/theGutsUnreal/MachineDesiring/MachineDesiring/MachineDesiring.uproject\" -WaitMutex -FromMsBuild)",
+      "Bash(python3:*)",
+      "Bash(powershell -Command \"\\(Get-Content 'D:/THEGUTS/theGutsUnreal/MachineDesiring/MachineDesiring/Source/MachineDesiring/Population/U_populationSubsystem.cpp' -Encoding UTF8\\)[1241..1245]\")",
+      "Bash(powershell -Command \"\n\\\\$file = 'D:/THEGUTS/theGutsUnreal/MachineDesiring/MachineDesiring/Source/MachineDesiring/Population/U_populationSubsystem.cpp'\n\\\\$content = Get-Content \\\\$file -Raw -Encoding UTF8\n\\\\$old = 'VisAttractionMatrix[IdA * PopulationSize + IdB]'\n\\\\$new = 'VisAttractionMatrix[IdA * Profiles.Num\\(\\) + IdB]'\n\\\\$content = \\\\$content.Replace\\(\\\\$old, \\\\$new\\)\n\\\\$old = 'VisAttractionMatrix[IdB * PopulationSize + IdA]'\n\\\\$new = 'VisAttractionMatrix[IdB * Profiles.Num\\(\\) + IdA]'\n\\\\$content = \\\\$content.Replace\\(\\\\$old, \\\\$new\\)\n\\\\$old = 'SexAttractionMatrix[IdA * PopulationSize + IdB]'\n\\\\$new = 'SexAttractionMatrix[IdA * Profiles.Num\\(\\) + IdB]'\n\\\\$content = \\\\$content.Replace\\(\\\\$old, \\\\$new\\)\n\\\\$old = 'SexAttractionMatrix[IdB * PopulationSize + IdA]'\n\\\\$new = 'SexAttractionMatrix[IdB * Profiles.Num\\(\\) + IdA]'\n\\\\$content = \\\\$content.Replace\\(\\\\$old, \\\\$new\\)\n\\\\$old = 'AppAttractionMatrix[IdA * PopulationSize + IdB]'\n\\\\$new = 'AppAttractionMatrix[IdA * Profiles.Num\\(\\) + IdB]'\n\\\\$content = \\\\$content.Replace\\(\\\\$old, \\\\$new\\)\n\\\\$old = 'AppAttractionMatrix[IdB * PopulationSize + IdA]'\n\\\\$new = 'AppAttractionMatrix[IdB * Profiles.Num\\(\\) + IdA]'\n\\\\$content = \\\\$content.Replace\\(\\\\$old, \\\\$new\\)\n[System.IO.File]::WriteAllText\\(\\\\$file, \\\\$content, [System.Text.Encoding]::UTF8\\)\nWrite-Host 'Done'\n\")",
+      "Bash(find D:/THEGUTS/theGutsUnreal/MachineDesiring/MachineDesiring -name *.log -newer D:/THEGUTS/theGutsUnreal/MachineDesiring/MachineDesiring/Source)",
+      "Bash(git checkout *)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(git push *)"
+    ]
+  }
+}
